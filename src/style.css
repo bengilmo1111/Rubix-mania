@@ -279,3 +279,64 @@ h1 {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
+
+.gesture-guide {
+  position: absolute;
+  z-index: 4;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 100ms ease;
+}
+
+.gesture-guide.visible { opacity: 1; }
+
+.gesture-axis {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 76px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .5);
+  box-shadow: 0 0 10px rgba(126, 156, 255, .45);
+  transform-origin: center;
+  transition: width 100ms ease, height 100ms ease, background 100ms ease, box-shadow 100ms ease, opacity 100ms ease;
+}
+
+.gesture-axis::before,
+.gesture-axis::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-top: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+  color: rgba(255, 255, 255, .72);
+}
+
+.gesture-axis::before { left: -1px; transform: translateY(-50%) rotate(-135deg); }
+.gesture-axis::after { right: -1px; transform: translateY(-50%) rotate(45deg); }
+
+.gesture-axis.active {
+  width: 92px;
+  height: 5px;
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 0 18px rgba(111, 140, 255, .95);
+}
+
+.gesture-axis:not(.active) { opacity: .58; }
+.gesture-guide:has(.gesture-axis.active) .gesture-axis:not(.active) { opacity: .16; }
+
+.gesture-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(255,255,255,.9);
+  border-radius: 50%;
+  background: rgba(20, 24, 55, .72);
+  box-shadow: 0 0 14px rgba(112, 144, 255, .9);
+}

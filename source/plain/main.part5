@@ -42,27 +42,32 @@ canvas.addEventListener('pointerdown', event => {
   if (animating) return;
   canvas.setPointerCapture(event.pointerId);
   const hit = firstCubeHit(event);
-  const stickerHit = hit?.object.userData.isSticker ? hit : null;
   activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY, startedOnCube: Boolean(hit) });
 
+  // Two or more fingers always orbit + pinch-zoom, wherever they landed.
   if (activePointers.size >= 2) {
     cancelTurnPreviewForOrbit();
     beginOrbitFromPointers();
     return;
   }
 
-  if (viewMode) {
-    if (hit) beginOrbitFromPointers();
+  // Single pointer: orbit when the View lock is on or the gesture starts off
+  // the cube (empty space). Otherwise grab the cubelet and twist its layer.
+  if (viewMode || !hit) {
+    beginOrbitFromPointers();
     return;
   }
 
-  if (!stickerHit) return;
-
-  const cubelet = stickerHit.object.userData.cubelet as Cubelet;
-  const anchorPointWorld = stickerHit.point.clone();
-  const hitNormalWorld = worldNormalForHit(stickerHit);
+  const cubelet = hit.object.userData.cubelet as Cubelet;
+  const anchorPointWorld = hit.point.clone();
+  const hitNormalWorld = worldNormalForHit(hit);
   const candidates = getTurnCandidates(hitNormalWorld, anchorPointWorld, cubelet);
-  if (candidates.length < 2) return;
+  if (candidates.length < 2) {
+    // Grazing hit — couldn't resolve two turn directions. Fall back to orbit
+    // so a gesture on the cube never feels dead.
+    beginOrbitFromPointers();
+    return;
+  }
   showGestureGuide(event.clientX, event.clientY, candidates);
   turnGesture = {
     pointerId: event.pointerId,
@@ -92,24 +97,22 @@ canvas.addEventListener('pointermove', event => {
   const previousPointer = activePointers.get(event.pointerId)!;
   activePointers.set(event.pointerId, { ...previousPointer, x: event.clientX, y: event.clientY });
 
-  const orbitStartedOnCube = [...activePointers.values()].some(pointerState => pointerState.startedOnCube);
-  if ((activePointers.size >= 2 || viewMode || orbitGesture) && orbitStartedOnCube) {
-    if (!orbitGesture) beginOrbitFromPointers();
+  if (orbitGesture) {
     const center = getPointerCenter();
-    const dx = center.x - orbitGesture!.lastCenterX;
-    const dy = center.y - orbitGesture!.lastCenterY;
+    const dx = center.x - orbitGesture.lastCenterX;
+    const dy = center.y - orbitGesture.lastCenterY;
     cameraYaw -= dx * 0.008;
     cameraPitch = THREE.MathUtils.clamp(cameraPitch + dy * 0.006, -0.85, 0.95);
 
     const distance = getPointerDistance();
-    if (distance !== null && orbitGesture!.lastDistance !== null) {
-      const pinchDelta = distance - orbitGesture!.lastDistance;
+    if (distance !== null && orbitGesture.lastDistance !== null) {
+      const pinchDelta = distance - orbitGesture.lastDistance;
       cameraDistance = THREE.MathUtils.clamp(cameraDistance - pinchDelta * 0.018, minCameraDistance, maxCameraDistance);
     }
 
-    orbitGesture!.lastCenterX = center.x;
-    orbitGesture!.lastCenterY = center.y;
-    orbitGesture!.lastDistance = distance;
+    orbitGesture.lastCenterX = center.x;
+    orbitGesture.lastCenterY = center.y;
+    orbitGesture.lastDistance = distance;
     updateCamera();
     return;
   }

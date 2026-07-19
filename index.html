@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#06091d" />
+    <meta name="description" content="Rubix Mania — a tactile voxel cube puzzle floating in space." />
+    <title>Rubix Mania</title>
+  </head>
+  <body>
+    <main id="app">
+      <canvas id="game-canvas" aria-label="Interactive 2 by 2 voxel cube"></canvas>
+
+      <header class="hud top-hud">
+        <div>
+          <p class="eyebrow">Casper presents</p>
+          <h1>Rubix Mania</h1>
+        </div>
+        <div class="score-card" aria-live="polite">
+          <span>Moves</span>
+          <strong id="move-count">0</strong>
+        </div>
+      </header>
+
+      <section class="hint-card" id="hint-card">
+        <strong>Push a row</strong>
+        <span>Swipe directly on the cube. Drag empty space to look around.</span>
+      </section>
+
+      <nav class="hud controls" aria-label="Game controls">
+        <button id="undo-btn" type="button">↶ <span>Undo</span></button>
+        <button id="scramble-btn" class="primary" type="button">✦ <span>Scramble</span></button>
+        <button id="reset-btn" type="button">↺ <span>Reset</span></button>
+        <button id="view-btn" type="button">◇ <span>View</span></button>
+      </nav>
+
+      <div class="status-pill" id="status-pill" role="status">Ready</div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

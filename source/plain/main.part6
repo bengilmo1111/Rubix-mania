@@ -1,0 +1,136 @@
+yer = choice.layer;
+        turnGesture.dragUnitX = choice.unitX;
+        turnGesture.dragUnitY = choice.unitY;
+        const signedProjection = totalDx * choice.unitX + totalDy * choice.unitY;
+        turnGesture.sign = signedProjection >= 0 ? 1 : -1;
+        turnGesture.selected = cubelets.filter(c => coordForAxis(c.coord, choice.axis) === choice.layer);
+        detachSelected(turnGesture.selected);
+        turnGesture.locked = true;
+        lockGestureGuide(choice);
+      }
+    }
+
+    if (turnGesture.locked && turnGesture.axis) {
+      const signedDrag = totalDx * turnGesture.dragUnitX + totalDy * turnGesture.dragUnitY;
+      const angle = THREE.MathUtils.clamp(signedDrag * 0.0125, -1.82, 1.82);
+      turnGesture.angle = angle;
+      turnGesture.sign = angle >= 0 ? 1 : -1;
+      setPivotAngle(turnGesture.axis, angle);
+    }
+  }
+});
+
+function endPointer(event: PointerEvent) {
+  activePointers.delete(event.pointerId);
+  hideGestureGuide();
+
+  if (turnGesture?.pointerId === event.pointerId) {
+    const gesture = turnGesture;
+    turnGesture = null;
+    if (gesture.locked && gesture.axis) {
+      const commit = Math.abs(gesture.angle) >= THREE.MathUtils.degToRad(42) || gesture.velocity > 0.65;
+      completePreview(gesture, commit);
+    }
+  }
+
+  if (activePointers.size === 0) orbitGesture = null;
+  else beginOrbitFromPointers();
+}
+
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+
+undoBtn.addEventListener('click', async () => {
+  if (animating) return;
+  const last = moveHistory.pop();
+  if (!last) return;
+  await performMove({ ...last, quarterTurns: (last.quarterTurns * -1) as -1 | 1 }, false);
+  moveCount = Math.max(0, moveCount - 1);
+  moveCountEl.textContent = String(moveCount);
+  showStatus('Move undone');
+  updateButtons();
+});
+
+async function scrambleCube() {
+  if (animating) return;
+  showStatus('Scrambling…');
+  const moves: CubeMove[] = [];
+  let previousAxis: Axis | null = null;
+  for (let i = 0; i < 10; i++) {
+    const axes: Axis[] = ['x', 'y', 'z'];
+    let axis = axes[Math.floor(Math.random() * axes.length)];
+    while (axis === previousAxis) axis = axes[Math.floor(Math.random() * axes.length)];
+    previousAxis = axis;
+    moves.push({
+      axis,
+      layer: Math.random() > 0.5 ? 0 : size - 1,
+      quarterTurns: Math.random() > 0.5 ? 1 : -1
+    });
+  }
+  for (const move of moves) await performMove(move, false, 80);
+  moveHistory.length = 0;
+  moveCount = 0;
+  moveCountEl.textContent = '0';
+  showStatus('Your turn!');
+  updateButtons();
+}
+
+function resetCube() {
+  if (animating) return;
+  cubelets.forEach(c => {
+    c.coord = { ...c.home };
+    c.group.quaternion.identity();
+    setCubeletTransform(c);
+  });
+  moveHistory.length = 0;
+  moveCount = 0;
+  moveCountEl.textContent = '0';
+  showStatus('Cube reset');
+  updateButtons();
+}
+
+function closeGameMenu() {
+  gameMenu.hidden = true;
+  menuBtn.setAttribute('aria-expanded', 'false');
+}
+
+function requestDangerAction(action: 'scramble' | 'reset') {
+  pendingDangerAction = action;
+  closeGameMenu();
+  const isScramble = action === 'scramble';
+  confirmTitle.textContent = isScramble ? 'Scramble this cube?' : 'Reset this cube?';
+  confirmCopy.textContent = isScramble
+    ? 'Your current progress will be replaced with a new random puzzle.'
+    : 'Your current progress will be cleared and the cube returned to solved.';
+  confirmAction.textContent = isScramble ? 'Scramble' : 'Reset';
+  confirmDialog.showModal();
+}
+
+menuBtn.addEventListener('click', () => {
+  const willOpen = gameMenu.hidden;
+  gameMenu.hidden = !willOpen;
+  menuBtn.setAttribute('aria-expanded', String(willOpen));
+});
+
+scrambleBtn.addEventListener('click', () => requestDangerAction('scramble'));
+resetBtn.addEventListener('click', () => requestDangerAction('reset'));
+
+confirmDialog.addEventListener('close', async () => {
+  const action = pendingDangerAction;
+  pendingDangerAction = null;
+  if (confirmDialog.returnValue !== 'confirm' || !action) return;
+  if (action === 'scramble') await scrambleCube();
+  else resetCube();
+});
+
+document.addEventListener('pointerdown', event => {
+  if (gameMenu.hidden) return;
+  const target = event.target as Node;
+  if (!gameMenu.contains(target) && !menuBtn.contains(target)) closeGameMenu();
+});
+
+viewBtn.addEventListener('click', () => {
+  viewMode = !viewMode;
+  viewBtn.classList.toggle('active', viewMode);
+  viewBtn.setAttribute('aria-pressed', String(viewMode));
+  const label = viewBtn.querySelector('spa

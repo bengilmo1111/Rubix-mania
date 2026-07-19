@@ -72,6 +72,16 @@ const roundedBox = new THREE.BoxGeometry(0.98, 0.98, 0.98, 3, 3, 3);
 roundedBox.computeVertexNormals();
 const stickerGeometry = new THREE.BoxGeometry(0.76, 0.76, 0.055, 2, 2, 1);
 
+// Additive glow overlay used to highlight the layer a gesture will turn.
+const highlightGeometry = new THREE.BoxGeometry(1.07, 1.07, 1.07);
+const highlightMaterial = new THREE.MeshBasicMaterial({
+  color: 0x8fc8ff,
+  transparent: true,
+  opacity: 0.5,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false
+});
+
 function createSticker(material: THREE.Material, normal: THREE.Vector3): THREE.Mesh {
   const sticker = new THREE.Mesh(stickerGeometry, material);
   sticker.position.copy(normal).multiplyScalar(0.515);
@@ -94,6 +104,11 @@ function makeCubelet(x: number, y: number, z: number): Cubelet {
     new THREE.EdgesGeometry(new THREE.BoxGeometry(0.985, 0.985, 0.985)),
     new THREE.LineBasicMaterial({ color: edgeMaterial.color, transparent: true, opacity: 0.5 })
   );
+  // Decorative wireframe only — never hit-test it. Three.js raycasts lines with
+  // a loose screen-space threshold, so leaving it interactive makes every grab
+  // resolve to whichever cubelet's edges are nearest the ray (always the far
+  // corner), selecting the wrong layer.
+  bevelShell.raycast = () => {};
   group.add(bevelShell);
 
   if (x === size - 1) group.add(createSticker(stickerMaterials.px, new THREE.Vector3(1, 0, 0)));
@@ -103,11 +118,19 @@ function makeCubelet(x: number, y: number, z: number): Cubelet {
   if (z === size - 1) group.add(createSticker(stickerMaterials.pz, new THREE.Vector3(0, 0, 1)));
   if (z === 0) group.add(createSticker(stickerMaterials.nz, new THREE.Vector3(0, 0, -1)));
 
+  const highlight = new THREE.Mesh(highlightGeometry, highlightMaterial);
+  highlight.visible = false;
+  highlight.castShadow = false;
+  highlight.receiveShadow = false;
+  highlight.raycast = () => {};
+  group.add(highlight);
+
   const cubelet: Cubelet = {
     id: `${x}-${y}-${z}`,
     home: { x, y, z },
     coord: { x, y, z },
-    group
+    group,
+    highlight
   };
 
   group.userData.cubelet = cubelet;

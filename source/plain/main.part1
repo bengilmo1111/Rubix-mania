@@ -10,6 +10,7 @@ type Cubelet = {
   home: Vec3Int;
   coord: Vec3Int;
   group: THREE.Group;
+  highlight: THREE.Mesh;
 };
 
 type TurnCandidate = {
@@ -63,12 +64,6 @@ const confirmDialog = document.querySelector<HTMLDialogElement>('#confirm-dialog
 const confirmTitle = document.querySelector<HTMLElement>('#confirm-title')!;
 const confirmCopy = document.querySelector<HTMLElement>('#confirm-copy')!;
 const confirmAction = document.querySelector<HTMLButtonElement>('#confirm-action')!;
-
-const gestureGuide = document.createElement('div');
-gestureGuide.className = 'gesture-guide';
-gestureGuide.innerHTML = '<span class="gesture-axis axis-a"></span><span class="gesture-axis axis-b"></span><span class="gesture-dot"></span>';
-document.querySelector<HTMLElement>('#app')!.appendChild(gestureGuide);
-const guideAxes = [...gestureGuide.querySelectorAll<HTMLElement>('.gesture-axis')];
 
 const scene = new THREE.Scene();
 scene.fog = new THREE.FogExp2(0x07091c, 0.035);

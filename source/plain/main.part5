@@ -32,7 +32,7 @@ function beginOrbitFromPointers() {
 
 function cancelTurnPreviewForOrbit() {
   if (!turnGesture) return;
-  hideGestureGuide();
+  clearHighlights();
   const gesture = turnGesture;
   turnGesture = null;
   if (gesture.locked && gesture.axis) completePreview(gesture, false, false);
@@ -68,7 +68,7 @@ canvas.addEventListener('pointerdown', event => {
     beginOrbitFromPointers();
     return;
   }
-  showGestureGuide(event.clientX, event.clientY, candidates);
+  highlightCubelet(cubelet);
   turnGesture = {
     pointerId: event.pointerId,
     startX: event.clientX,

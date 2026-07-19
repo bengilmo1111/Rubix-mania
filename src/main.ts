@@ -10,6 +10,7 @@ type Cubelet = {
   home: Vec3Int;
   coord: Vec3Int;
   group: THREE.Group;
+  highlight: THREE.Mesh;
 };
 
 type TurnCandidate = {
@@ -63,12 +64,6 @@ const confirmDialog = document.querySelector<HTMLDialogElement>('#confirm-dialog
 const confirmTitle = document.querySelector<HTMLElement>('#confirm-title')!;
 const confirmCopy = document.querySelector<HTMLElement>('#confirm-copy')!;
 const confirmAction = document.querySelector<HTMLButtonElement>('#confirm-action')!;
-
-const gestureGuide = document.createElement('div');
-gestureGuide.className = 'gesture-guide';
-gestureGuide.innerHTML = '<span class="gesture-axis axis-a"></span><span class="gesture-axis axis-b"></span><span class="gesture-dot"></span>';
-document.querySelector<HTMLElement>('#app')!.appendChild(gestureGuide);
-const guideAxes = [...gestureGuide.querySelectorAll<HTMLElement>('.gesture-axis')];
 
 const scene = new THREE.Scene();
 scene.fog = new THREE.FogExp2(0x07091c, 0.035);
@@ -203,6 +198,16 @@ const roundedBox = new THREE.BoxGeometry(0.98, 0.98, 0.98, 3, 3, 3);
 roundedBox.computeVertexNormals();
 const stickerGeometry = new THREE.BoxGeometry(0.76, 0.76, 0.055, 2, 2, 1);
 
+// Additive glow overlay used to highlight the layer a gesture will turn.
+const highlightGeometry = new THREE.BoxGeometry(1.07, 1.07, 1.07);
+const highlightMaterial = new THREE.MeshBasicMaterial({
+  color: 0x8fc8ff,
+  transparent: true,
+  opacity: 0.5,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false
+});
+
 function createSticker(material: THREE.Material, normal: THREE.Vector3): THREE.Mesh {
   const sticker = new THREE.Mesh(stickerGeometry, material);
   sticker.position.copy(normal).multiplyScalar(0.515);
@@ -225,6 +230,11 @@ function makeCubelet(x: number, y: number, z: number): Cubelet {
     new THREE.EdgesGeometry(new THREE.BoxGeometry(0.985, 0.985, 0.985)),
     new THREE.LineBasicMaterial({ color: edgeMaterial.color, transparent: true, opacity: 0.5 })
   );
+  // Decorative wireframe only — never hit-test it. Three.js raycasts lines with
+  // a loose screen-space threshold, so leaving it interactive makes every grab
+  // resolve to whichever cubelet's edges are nearest the ray (always the far
+  // corner), selecting the wrong layer.
+  bevelShell.raycast = () => {};
   group.add(bevelShell);
 
   if (x === size - 1) group.add(createSticker(stickerMaterials.px, new THREE.Vector3(1, 0, 0)));
@@ -234,11 +244,19 @@ function makeCubelet(x: number, y: number, z: number): Cubelet {
   if (z === size - 1) group.add(createSticker(stickerMaterials.pz, new THREE.Vector3(0, 0, 1)));
   if (z === 0) group.add(createSticker(stickerMaterials.nz, new THREE.Vector3(0, 0, -1)));
 
+  const highlight = new THREE.Mesh(highlightGeometry, highlightMaterial);
+  highlight.visible = false;
+  highlight.castShadow = false;
+  highlight.receiveShadow = false;
+  highlight.raycast = () => {};
+  group.add(highlight);
+
   const cubelet: Cubelet = {
     id: `${x}-${y}-${z}`,
     home: { x, y, z },
     coord: { x, y, z },
-    group
+    group,
+    highlight
   };
 
   group.userData.cubelet = cubelet;
@@ -290,7 +308,7 @@ function setPointerFromEvent(event: PointerEvent) {
 function firstCubeHit(event: PointerEvent): THREE.Intersection | null {
   setPointerFromEvent(event);
   const hits = raycaster.intersectObjects(cubelets.map(c => c.group), true);
-  return hits.find(hit => hit.object.userData.cubelet) ?? null;
+  return hits.find(hit => (hit.object as THREE.Mesh).isMesh && hit.object.userData.cubelet) ?? null;
 }
 
 function worldNormalForHit(hit: THREE.Intersection): THREE.Vector3 {
@@ -362,30 +380,25 @@ function chooseTurn(candidates: TurnCandidate[], dx: number, dy: number): TurnCa
   return best;
 }
 
-function showGestureGuide(clientX: number, clientY: number, candidates: TurnCandidate[]) {
-  gestureGuide.style.left = `${clientX}px`;
-  gestureGuide.style.top = `${clientY}px`;
-  gestureGuide.classList.add('visible');
-  guideAxes.forEach((axisEl, index) => {
-    const candidate = candidates[index];
-    axisEl.hidden = !candidate;
-    if (!candidate) return;
-    const angle = Math.atan2(candidate.unitY, candidate.unitX) * 180 / Math.PI;
-    axisEl.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
-    axisEl.classList.remove('active');
-  });
+function setHighlight(cubelet: Cubelet, on: boolean, opacity: number) {
+  cubelet.highlight.visible = on;
+  if (on) (cubelet.highlight.material as THREE.MeshBasicMaterial).opacity = opacity;
 }
 
-function lockGestureGuide(candidate: TurnCandidate) {
-  guideAxes.forEach((axisEl, index) => {
-    const item = turnGesture?.candidates[index];
-    axisEl.classList.toggle('active', Boolean(item && item.axis === candidate.axis));
-  });
+function clearHighlights() {
+  cubelets.forEach(c => { c.highlight.visible = false; });
 }
 
-function hideGestureGuide() {
-  gestureGuide.classList.remove('visible');
-  guideAxes.forEach(axisEl => axisEl.classList.remove('active'));
+// Gentle glow on the single grabbed piece before a direction is chosen.
+function highlightCubelet(cubelet: Cubelet) {
+  clearHighlights();
+  setHighlight(cubelet, true, 0.38);
+}
+
+// Bright glow on the whole row / column / face that will turn, so it is clear
+// which of the two possible moves the current swipe direction commits to.
+function highlightLayer(axis: Axis, layer: number) {
+  cubelets.forEach(c => setHighlight(c, coordForAxis(c.coord, axis) === layer, 0.6));
 }
 
 function detachSelected(selected: Cubelet[]) {
@@ -559,7 +572,7 @@ function beginOrbitFromPointers() {
 
 function cancelTurnPreviewForOrbit() {
   if (!turnGesture) return;
-  hideGestureGuide();
+  clearHighlights();
   const gesture = turnGesture;
   turnGesture = null;
   if (gesture.locked && gesture.axis) completePreview(gesture, false, false);
@@ -595,7 +608,7 @@ canvas.addEventListener('pointerdown', event => {
     beginOrbitFromPointers();
     return;
   }
-  showGestureGuide(event.clientX, event.clientY, candidates);
+  highlightCubelet(cubelet);
   turnGesture = {
     pointerId: event.pointerId,
     startX: event.clientX,
@@ -666,7 +679,7 @@ canvas.addEventListener('pointermove', event => {
         turnGesture.selected = cubelets.filter(c => coordForAxis(c.coord, choice.axis) === choice.layer);
         detachSelected(turnGesture.selected);
         turnGesture.locked = true;
-        lockGestureGuide(choice);
+        highlightLayer(choice.axis, choice.layer);
       }
     }
 
@@ -682,7 +695,7 @@ canvas.addEventListener('pointermove', event => {
 
 function endPointer(event: PointerEvent) {
   activePointers.delete(event.pointerId);
-  hideGestureGuide();
+  clearHighlights();
 
   if (turnGesture?.pointerId === event.pointerId) {
     const gesture = turnGesture;

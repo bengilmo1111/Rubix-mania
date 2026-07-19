@@ -1,0 +1,128 @@
+scene.add(stars);
+
+const brightStarGeometry = new THREE.BufferGeometry();
+const brightStarCount = 120;
+const brightStarPositions = new Float32Array(brightStarCount * 3);
+for (let i = 0; i < brightStarCount; i++) {
+  const radius = THREE.MathUtils.randFloat(12, 32);
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(THREE.MathUtils.randFloatSpread(2));
+  brightStarPositions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+  brightStarPositions[i * 3 + 1] = radius * Math.cos(phi);
+  brightStarPositions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
+}
+brightStarGeometry.setAttribute('position', new THREE.BufferAttribute(brightStarPositions, 3));
+const brightStars = new THREE.Points(
+  brightStarGeometry,
+  new THREE.PointsMaterial({
+    color: 0xffffff,
+    size: 0.18,
+    transparent: true,
+    opacity: 0.96,
+    sizeAttenuation: true,
+    depthWrite: false
+  })
+);
+scene.add(brightStars);
+
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+
+const size = 2;
+const spacing = 1.08;
+const half = (size - 1) / 2;
+const cubelets: Cubelet[] = [];
+const moveHistory: CubeMove[] = [];
+let moveCount = 0;
+let turnGesture: TurnGesture | null = null;
+let orbitGesture: OrbitGesture | null = null;
+const activePointers = new Map<number, ActivePointer>();
+let viewMode = false;
+let animating = false;
+let statusTimeout = 0;
+let pendingDangerAction: 'scramble' | 'reset' | null = null;
+
+let cameraYaw = Math.PI / 4;
+let cameraPitch = 0.42;
+let cameraDistance = 7.3;
+const minCameraDistance = 5.4;
+const maxCameraDistance = 10.5;
+
+const bodyMaterial = new THREE.MeshStandardMaterial({
+  color: 0x111522,
+  roughness: 0.28,
+  metalness: 0.14
+});
+const edgeMaterial = new THREE.MeshStandardMaterial({
+  color: 0x252b3e,
+  roughness: 0.45,
+  metalness: 0.08
+});
+
+const stickerMaterials: Record<string, THREE.MeshStandardMaterial> = {
+  px: new THREE.MeshStandardMaterial({ color: 0xf25f5c, roughness: 0.24 }),
+  nx: new THREE.MeshStandardMaterial({ color: 0xff9f1c, roughness: 0.24 }),
+  py: new THREE.MeshStandardMaterial({ color: 0xffe66d, roughness: 0.24 }),
+  ny: new THREE.MeshStandardMaterial({ color: 0xf7f7ff, roughness: 0.24 }),
+  pz: new THREE.MeshStandardMaterial({ color: 0x43d17d, roughness: 0.24 }),
+  nz: new THREE.MeshStandardMaterial({ color: 0x5968ff, roughness: 0.24 })
+};
+
+const roundedBox = new THREE.BoxGeometry(0.98, 0.98, 0.98, 3, 3, 3);
+roundedBox.computeVertexNormals();
+const stickerGeometry = new THREE.BoxGeometry(0.76, 0.76, 0.055, 2, 2, 1);
+
+function createSticker(material: THREE.Material, normal: THREE.Vector3): THREE.Mesh {
+  const sticker = new THREE.Mesh(stickerGeometry, material);
+  sticker.position.copy(normal).multiplyScalar(0.515);
+  sticker.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+  sticker.castShadow = false;
+  sticker.receiveShadow = false;
+  sticker.userData.isSticker = true;
+  return sticker;
+}
+
+function makeCubelet(x: number, y: number, z: number): Cubelet {
+  const group = new THREE.Group();
+  const body = new THREE.Mesh(roundedBox, bodyMaterial);
+  body.castShadow = true;
+  body.receiveShadow = true;
+  body.userData.isBody = true;
+  group.add(body);
+
+  const bevelShell = new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(0.985, 0.985, 0.985)),
+    new THREE.LineBasicMaterial({ color: edgeMaterial.color, transparent: true, opacity: 0.5 })
+  );
+  group.add(bevelShell);
+
+  if (x === size - 1) group.add(createSticker(stickerMaterials.px, new THREE.Vector3(1, 0, 0)));
+  if (x === 0) group.add(createSticker(stickerMaterials.nx, new THREE.Vector3(-1, 0, 0)));
+  if (y === size - 1) group.add(createSticker(stickerMaterials.py, new THREE.Vector3(0, 1, 0)));
+  if (y === 0) group.add(createSticker(stickerMaterials.ny, new THREE.Vector3(0, -1, 0)));
+  if (z === size - 1) group.add(createSticker(stickerMaterials.pz, new THREE.Vector3(0, 0, 1)));
+  if (z === 0) group.add(createSticker(stickerMaterials.nz, new THREE.Vector3(0, 0, -1)));
+
+  const cubelet: Cubelet = {
+    id: `${x}-${y}-${z}`,
+    home: { x, y, z },
+    coord: { x, y, z },
+    group
+  };
+
+  group.userData.cubelet = cubelet;
+  group.traverse((child) => { child.userData.cubelet = cubelet; });
+  setCubeletTransform(cubelet);
+  cubeRoot.add(group);
+  return cubelet;
+}
+
+function setCubeletTransform(cubelet: Cubelet) {
+  cubelet.group.position.set(
+    (cubelet.coord.x - half) * spacing,
+    (cubelet.coord.y - half) * spacing,
+    (cubelet.coord.z - half) * spacing
+  );
+}
+
+fo

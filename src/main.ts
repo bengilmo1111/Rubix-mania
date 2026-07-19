@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import './style.css';
+import pictureUrl from './picture-face.svg?url';
 
 type Axis = 'x' | 'y' | 'z';
 type CubeMove = { axis: Axis; layer: number; quarterTurns: -1 | 1 };
@@ -198,6 +199,28 @@ const stickerMaterials: Record<string, THREE.MeshStandardMaterial> = {
   nz: new THREE.MeshStandardMaterial({ color: 0x5968ff, roughness: 0.24 })
 };
 
+// Picture face: one image split into per-cubelet tiles. Each tile is a clone of
+// the base texture cropped to its cell via offset/repeat. Because a sticker is a
+// child of its cubelet group, the tiles follow every move and reassemble when the
+// cube is solved. Swap picture-face.svg (or the import) to use a different image.
+const pictureTextures: THREE.Texture[] = [];
+const pictureBase = new THREE.TextureLoader().load(pictureUrl, () => {
+  pictureTextures.forEach(t => { t.needsUpdate = true; });
+});
+pictureBase.colorSpace = THREE.SRGBColorSpace;
+
+function pictureTileMaterial(col: number, row: number, n: number): THREE.MeshStandardMaterial {
+  const tex = pictureBase.clone();
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.repeat.set(1 / n, 1 / n);
+  tex.offset.set(col / n, row / n);
+  tex.needsUpdate = true;
+  pictureTextures.push(tex);
+  return new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.34, metalness: 0.02, map: tex });
+}
+
 const roundedBox = new THREE.BoxGeometry(0.98, 0.98, 0.98, 3, 3, 3);
 roundedBox.computeVertexNormals();
 const stickerGeometry = new THREE.BoxGeometry(0.76, 0.76, 0.055, 2, 2, 1);
@@ -244,8 +267,9 @@ function makeCubelet(x: number, y: number, z: number): Cubelet {
   if (x === size - 1) group.add(createSticker(stickerMaterials.px, new THREE.Vector3(1, 0, 0)));
   if (x === 0) group.add(createSticker(stickerMaterials.nx, new THREE.Vector3(-1, 0, 0)));
   if (y === size - 1) group.add(createSticker(stickerMaterials.py, new THREE.Vector3(0, 1, 0)));
-  if (y === 0) group.add(createSticker(stickerMaterials.ny, new THREE.Vector3(0, -1, 0)));
-  if (z === size - 1) group.add(createSticker(stickerMaterials.pz, new THREE.Vector3(0, 0, 1)));
+  // White face moves to the front and carries the picture; green takes the bottom.
+  if (y === 0) group.add(createSticker(stickerMaterials.pz, new THREE.Vector3(0, -1, 0)));
+  if (z === size - 1) group.add(createSticker(pictureTileMaterial(x, y, size), new THREE.Vector3(0, 0, 1)));
   if (z === 0) group.add(createSticker(stickerMaterials.nz, new THREE.Vector3(0, 0, -1)));
 
   const highlight = new THREE.Mesh(highlightGeometry, highlightMaterial);

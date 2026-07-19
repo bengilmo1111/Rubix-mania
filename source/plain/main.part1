@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import './style.css';
+import pictureUrl from './picture-face.svg?url';
 
 type Axis = 'x' | 'y' | 'z';
 type CubeMove = { axis: Axis; layer: number; quarterTurns: -1 | 1 };

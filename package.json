@@ -4,8 +4,12 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "assemble-source": "node scripts/assemble-source.mjs",
+    "predev": "npm run assemble-source",
     "dev": "vite",
-    "build": "vite build",
+    "prebuild": "npm run assemble-source",
+    "build": "tsc && vite build",
+    "pretypecheck": "npm run assemble-source",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },

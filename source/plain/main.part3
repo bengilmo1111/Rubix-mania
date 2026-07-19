@@ -7,6 +7,19 @@ shadowPlane.position.y = -2.12;
 shadowPlane.receiveShadow = true;
 scene.add(shadowPlane);
 
+// Opaque dark core that fills the hollow interior so the gaps between cubelets
+// reveal a solid inside instead of the starfield behind the cube. Sized just
+// inside the shell (see frameCubeForSize) so it stays hidden except through the
+// gaps, and is never pointer-picked.
+const core = new THREE.Mesh(
+  new THREE.BoxGeometry(1, 1, 1),
+  new THREE.MeshStandardMaterial({ color: 0x0b0e18, roughness: 0.7, metalness: 0.05 })
+);
+core.raycast = () => {};
+core.castShadow = false;
+core.receiveShadow = false;
+cubeRoot.add(core);
+
 // Distance from the cube centre to the outer face of an edge cubelet.
 function cubeExtent(): number {
   return (size - 1) / 2 * spacing + 0.5;
@@ -19,6 +32,8 @@ function frameCubeForSize() {
   cameraDistance = extent / 0.145;
   minCameraDistance = cameraDistance * 0.72;
   maxCameraDistance = cameraDistance * 1.65;
+  const coreHalf = extent - 0.12;
+  core.scale.setScalar(coreHalf * 2);
   const bottom = -extent;
   const groundScale = extent / cubeExtentFor(2);
   shadowPlane.position.y = bottom - 0.05;

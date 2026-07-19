@@ -1,0 +1,131 @@
+import * as THREE from 'three';
+import './style.css';
+
+type Axis = 'x' | 'y' | 'z';
+type CubeMove = { axis: Axis; layer: number; quarterTurns: -1 | 1 };
+type Vec3Int = { x: number; y: number; z: number };
+
+type Cubelet = {
+  id: string;
+  home: Vec3Int;
+  coord: Vec3Int;
+  group: THREE.Group;
+};
+
+type TurnCandidate = {
+  axis: Axis;
+  layer: number;
+  unitX: number;
+  unitY: number;
+};
+
+type TurnGesture = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  lastX: number;
+  lastY: number;
+  lastTime: number;
+  velocity: number;
+  hitNormalWorld: THREE.Vector3;
+  hitCubelet: Cubelet;
+  anchorPointWorld: THREE.Vector3;
+  candidates: TurnCandidate[];
+  locked: boolean;
+  axis: Axis | null;
+  layer: number;
+  sign: -1 | 1;
+  angle: number;
+  selected: Cubelet[];
+  dragUnitX: number;
+  dragUnitY: number;
+};
+
+type ActivePointer = { x: number; y: number; startedOnCube: boolean };
+
+type OrbitGesture = {
+  lastCenterX: number;
+  lastCenterY: number;
+  lastDistance: number | null;
+};
+
+const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas')!;
+const moveCountEl = document.querySelector<HTMLElement>('#move-count')!;
+const hintCard = document.querySelector<HTMLElement>('#hint-card')!;
+const statusPill = document.querySelector<HTMLElement>('#status-pill')!;
+const undoBtn = document.querySelector<HTMLButtonElement>('#undo-btn')!;
+const scrambleBtn = document.querySelector<HTMLButtonElement>('#scramble-btn')!;
+const resetBtn = document.querySelector<HTMLButtonElement>('#reset-btn')!;
+const viewBtn = document.querySelector<HTMLButtonElement>('#view-btn')!;
+const menuBtn = document.querySelector<HTMLButtonElement>('#menu-btn')!;
+const gameMenu = document.querySelector<HTMLElement>('#game-menu')!;
+const confirmDialog = document.querySelector<HTMLDialogElement>('#confirm-dialog')!;
+const confirmTitle = document.querySelector<HTMLElement>('#confirm-title')!;
+const confirmCopy = document.querySelector<HTMLElement>('#confirm-copy')!;
+const confirmAction = document.querySelector<HTMLButtonElement>('#confirm-action')!;
+
+const gestureGuide = document.createElement('div');
+gestureGuide.className = 'gesture-guide';
+gestureGuide.innerHTML = '<span class="gesture-axis axis-a"></span><span class="gesture-axis axis-b"></span><span class="gesture-dot"></span>';
+document.querySelector<HTMLElement>('#app')!.appendChild(gestureGuide);
+const guideAxes = [...gestureGuide.querySelectorAll<HTMLElement>('.gesture-axis')];
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x07091c, 0.035);
+
+const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const cubeRoot = new THREE.Group();
+scene.add(cubeRoot);
+
+const turnPivot = new THREE.Group();
+cubeRoot.add(turnPivot);
+
+scene.add(new THREE.HemisphereLight(0xa8b7ff, 0x160e32, 2.6));
+const keyLight = new THREE.DirectionalLight(0xffffff, 4.3);
+keyLight.position.set(4, 7, 6);
+keyLight.castShadow = true;
+scene.add(keyLight);
+
+const rimLight = new THREE.PointLight(0x7766ff, 24, 18);
+rimLight.position.set(-5, 2, -4);
+scene.add(rimLight);
+
+const glow = new THREE.Mesh(
+  new THREE.CircleGeometry(2.7, 64),
+  new THREE.MeshBasicMaterial({ color: 0x6954ff, transparent: true, opacity: 0.085, depthWrite: false })
+);
+glow.position.set(0, -2.15, 0);
+glow.rotation.x = -Math.PI / 2;
+scene.add(glow);
+
+const starGeometry = new THREE.BufferGeometry();
+const starCount = 1500;
+const starPositions = new Float32Array(starCount * 3);
+const starSeeds = new Float32Array(starCount);
+for (let i = 0; i < starCount; i++) {
+  const radius = THREE.MathUtils.randFloat(11, 38);
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(THREE.MathUtils.randFloatSpread(2));
+  starPositions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+  starPositions[i * 3 + 1] = radius * Math.cos(phi);
+  starPositions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
+  starSeeds[i] = Math.random();
+}
+starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+const stars = new THREE.Points(
+  starGeometry,
+  new THREE.PointsMaterial({
+    color: 0xdce4ff,
+    size: 0.09,
+    transparent: true,
+    opacity: 0.98,
+    sizeAttenuation: true,
+    depthWrite: false
+  })
+);

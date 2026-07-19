@@ -1,0 +1,131 @@
+earTimeout(statusTimeout);
+  statusTimeout = window.setTimeout(() => statusPill.classList.remove('show'), 1500);
+}
+
+function updateButtons() {
+  undoBtn.disabled = animating || moveHistory.length === 0;
+  scrambleBtn.disabled = animating;
+  resetBtn.disabled = animating;
+  viewBtn.disabled = animating;
+}
+
+function getPointerCenter(): { x: number; y: number } {
+  const values = [...activePointers.values()];
+  const total = values.reduce((acc, point) => ({ x: acc.x + point.x, y: acc.y + point.y }), { x: 0, y: 0 });
+  return { x: total.x / values.length, y: total.y / values.length };
+}
+
+function getPointerDistance(): number | null {
+  const values = [...activePointers.values()];
+  if (values.length < 2) return null;
+  return Math.hypot(values[0].x - values[1].x, values[0].y - values[1].y);
+}
+
+function beginOrbitFromPointers() {
+  const center = getPointerCenter();
+  orbitGesture = {
+    lastCenterX: center.x,
+    lastCenterY: center.y,
+    lastDistance: getPointerDistance()
+  };
+}
+
+function cancelTurnPreviewForOrbit() {
+  if (!turnGesture) return;
+  hideGestureGuide();
+  const gesture = turnGesture;
+  turnGesture = null;
+  if (gesture.locked && gesture.axis) completePreview(gesture, false, false);
+}
+
+canvas.addEventListener('pointerdown', event => {
+  if (animating) return;
+  canvas.setPointerCapture(event.pointerId);
+  const hit = firstCubeHit(event);
+  const stickerHit = hit?.object.userData.isSticker ? hit : null;
+  activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY, startedOnCube: Boolean(hit) });
+
+  if (activePointers.size >= 2) {
+    cancelTurnPreviewForOrbit();
+    beginOrbitFromPointers();
+    return;
+  }
+
+  if (viewMode) {
+    if (hit) beginOrbitFromPointers();
+    return;
+  }
+
+  if (!stickerHit) return;
+
+  const cubelet = stickerHit.object.userData.cubelet as Cubelet;
+  const anchorPointWorld = stickerHit.point.clone();
+  const hitNormalWorld = worldNormalForHit(stickerHit);
+  const candidates = getTurnCandidates(hitNormalWorld, anchorPointWorld, cubelet);
+  if (candidates.length < 2) return;
+  showGestureGuide(event.clientX, event.clientY, candidates);
+  turnGesture = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    lastX: event.clientX,
+    lastY: event.clientY,
+    lastTime: event.timeStamp,
+    velocity: 0,
+    hitNormalWorld,
+    hitCubelet: cubelet,
+    anchorPointWorld,
+    candidates,
+    locked: false,
+    axis: null,
+    layer: 0,
+    sign: 1,
+    angle: 0,
+    selected: [],
+    dragUnitX: 0,
+    dragUnitY: 0
+  };
+});
+
+canvas.addEventListener('pointermove', event => {
+  if (!activePointers.has(event.pointerId)) return;
+  const previousPointer = activePointers.get(event.pointerId)!;
+  activePointers.set(event.pointerId, { ...previousPointer, x: event.clientX, y: event.clientY });
+
+  const orbitStartedOnCube = [...activePointers.values()].some(pointerState => pointerState.startedOnCube);
+  if ((activePointers.size >= 2 || viewMode || orbitGesture) && orbitStartedOnCube) {
+    if (!orbitGesture) beginOrbitFromPointers();
+    const center = getPointerCenter();
+    const dx = center.x - orbitGesture!.lastCenterX;
+    const dy = center.y - orbitGesture!.lastCenterY;
+    cameraYaw -= dx * 0.008;
+    cameraPitch = THREE.MathUtils.clamp(cameraPitch + dy * 0.006, -0.85, 0.95);
+
+    const distance = getPointerDistance();
+    if (distance !== null && orbitGesture!.lastDistance !== null) {
+      const pinchDelta = distance - orbitGesture!.lastDistance;
+      cameraDistance = THREE.MathUtils.clamp(cameraDistance - pinchDelta * 0.018, minCameraDistance, maxCameraDistance);
+    }
+
+    orbitGesture!.lastCenterX = center.x;
+    orbitGesture!.lastCenterY = center.y;
+    orbitGesture!.lastDistance = distance;
+    updateCamera();
+    return;
+  }
+
+  if (turnGesture?.pointerId === event.pointerId) {
+    const totalDx = event.clientX - turnGesture.startX;
+    const totalDy = event.clientY - turnGesture.startY;
+    const distance = Math.hypot(totalDx, totalDy);
+    const dt = Math.max(1, event.timeStamp - turnGesture.lastTime);
+    turnGesture.velocity = Math.hypot(event.clientX - turnGesture.lastX, event.clientY - turnGesture.lastY) / dt;
+    turnGesture.lastX = event.clientX;
+    turnGesture.lastY = event.clientY;
+    turnGesture.lastTime = event.timeStamp;
+
+    if (!turnGesture.locked && distance > 5) {
+      const choice = chooseTurn(turnGesture.candidates, totalDx, totalDy);
+      if (choice) {
+        turnGesture.axis = choice.axis;
+        turnGesture.la

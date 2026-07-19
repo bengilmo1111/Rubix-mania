@@ -1,0 +1,144 @@
+: rgba(255,255,255,.08); }
+.game-menu button > span { display: grid; gap: 2px; }
+.game-menu strong { font-size: .9rem; }
+.game-menu small { color: #aeb8df; font-size: .72rem; }
+.game-menu .danger { color: #ffb7bf; }
+
+.confirm-dialog {
+  width: min(360px, calc(100vw - 32px));
+  padding: 0;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 24px;
+  color: #f8fbff;
+  background: rgba(9,12,38,.97);
+  box-shadow: 0 24px 70px rgba(0,0,0,.56);
+}
+.confirm-dialog::backdrop { background: rgba(1,2,12,.68); backdrop-filter: blur(5px); }
+.confirm-dialog form { padding: 22px; }
+.dialog-eyebrow { margin: 0 0 5px; color: #aeb8df; font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.confirm-dialog h2 { margin: 0; font-family: "Fredoka"; font-size: 1.55rem; }
+.confirm-dialog p:not(.dialog-eyebrow) { margin: 8px 0 20px; color: #c4cbee; line-height: 1.45; }
+.dialog-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dialog-actions button { min-height: 46px; border: 0; border-radius: 14px; color: #f8fbff; background: rgba(255,255,255,.09); font-weight: 800; }
+.dialog-actions button.danger { background: linear-gradient(145deg, #e54d67, #b92e52); }
+
+.controls button.active {
+  color: #071024;
+  background: linear-gradient(145deg, #fff08a, #76e6ff);
+  box-shadow: 0 8px 24px rgba(98, 217, 255, .34), inset 0 1px 0 rgba(255,255,255,.65);
+}
+
+.controls button:active { transform: scale(.96); }
+.controls button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.controls button:disabled { opacity: .35; cursor: default; }
+
+.status-pill {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  top: max(92px, calc(env(safe-area-inset-top) + 80px));
+  transform: translateX(-50%) translateY(-10px);
+  padding: 7px 13px;
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(74, 57, 175, .8);
+  box-shadow: 0 8px 24px rgba(0,0,0,.28);
+  font-family: "Fredoka";
+  font-size: .78rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease, transform .2s ease;
+}
+
+.status-pill.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+@media (min-width: 700px) {
+  .hud { left: 28px; right: 28px; }
+  .controls {
+    left: 50%;
+    right: auto;
+    width: min(520px, calc(100vw - 40px));
+    transform: translateX(-50%);
+  }
+}
+
+@media (max-height: 620px) and (orientation: landscape) {
+  .hint-card { display: none; }
+  .controls {
+    left: auto;
+    right: max(12px, env(safe-area-inset-right));
+    bottom: 50%;
+    width: 84px;
+    transform: translateY(50%);
+    grid-template-columns: 1fr;
+  }
+  .controls button { min-height: 52px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}
+
+.gesture-guide {
+  position: absolute;
+  z-index: 4;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 100ms ease;
+}
+
+.gesture-guide.visible { opacity: 1; }
+
+.gesture-axis {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 76px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .5);
+  box-shadow: 0 0 10px rgba(126, 156, 255, .45);
+  transform-origin: center;
+  transition: width 100ms ease, height 100ms ease, background 100ms ease, box-shadow 100ms ease, opacity 100ms ease;
+}
+
+.gesture-axis::before,
+.gesture-axis::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-top: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+  color: rgba(255, 255, 255, .72);
+}
+
+.gesture-axis::before { left: -1px; transform: translateY(-50%) rotate(-135deg); }
+.gesture-axis::after { right: -1px; transform: translateY(-50%) rotate(45deg); }
+
+.gesture-axis.active {
+  width: 92px;
+  height: 5px;
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 0 18px rgba(111, 140, 255, .95);
+}
+
+.gesture-axis:not(.active) { opacity: .58; }
+.gesture-guide:has(.gesture-axis.active) .gesture-axis:not(.active) { opacity: .16; }
+
+.gesture-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(255,255,255,.9);
+  border-radius: 50%;
+  background: rgba(20, 24, 55, .72);
+  box-shadow: 0 0 14px rgba(112, 144, 255, .9);
+}

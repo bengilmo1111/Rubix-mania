@@ -1,0 +1,135 @@
+r (let x = 0; x < size; x++) {
+  for (let y = 0; y < size; y++) {
+    for (let z = 0; z < size; z++) cubelets.push(makeCubelet(x, y, z));
+  }
+}
+
+const shadowPlane = new THREE.Mesh(
+  new THREE.CircleGeometry(2.25, 64),
+  new THREE.ShadowMaterial({ color: 0x000000, opacity: 0.22 })
+);
+shadowPlane.rotation.x = -Math.PI / 2;
+shadowPlane.position.y = -2.12;
+shadowPlane.receiveShadow = true;
+scene.add(shadowPlane);
+
+function updateCamera() {
+  camera.position.set(
+    Math.sin(cameraYaw) * Math.cos(cameraPitch) * cameraDistance,
+    Math.sin(cameraPitch) * cameraDistance,
+    Math.cos(cameraYaw) * Math.cos(cameraPitch) * cameraDistance
+  );
+  camera.lookAt(0, 0, 0);
+}
+
+function setPointerFromEvent(event: PointerEvent) {
+  const rect = canvas.getBoundingClientRect();
+  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+}
+
+function firstCubeHit(event: PointerEvent): THREE.Intersection | null {
+  setPointerFromEvent(event);
+  const hits = raycaster.intersectObjects(cubelets.map(c => c.group), true);
+  return hits.find(hit => hit.object.userData.cubelet) ?? null;
+}
+
+function worldNormalForHit(hit: THREE.Intersection): THREE.Vector3 {
+  const normal = hit.face?.normal.clone() ?? new THREE.Vector3(0, 0, 1);
+  return normal.transformDirection(hit.object.matrixWorld).round();
+}
+
+function axisVector(axis: Axis): THREE.Vector3 {
+  if (axis === 'x') return new THREE.Vector3(1, 0, 0);
+  if (axis === 'y') return new THREE.Vector3(0, 1, 0);
+  return new THREE.Vector3(0, 0, 1);
+}
+
+function coordForAxis(coord: Vec3Int, axis: Axis): number {
+  return coord[axis];
+}
+
+function projectWorldPoint(point: THREE.Vector3): THREE.Vector2 {
+  const projected = point.clone().project(camera);
+  return new THREE.Vector2(
+    (projected.x * 0.5 + 0.5) * canvas.clientWidth,
+    (-projected.y * 0.5 + 0.5) * canvas.clientHeight
+  );
+}
+
+function getTurnCandidates(normal: THREE.Vector3, anchorPointWorld: THREE.Vector3, cubelet: Cubelet): TurnCandidate[] {
+  const anchorLocal = cubeRoot.worldToLocal(anchorPointWorld.clone());
+  const startScreen = projectWorldPoint(anchorPointWorld);
+  const candidates: TurnCandidate[] = [];
+
+  for (const axis of ['x', 'y', 'z'] as Axis[]) {
+    const axisVec = axisVector(axis);
+    if (Math.abs(axisVec.dot(normal)) > 0.5) continue;
+
+    const movedLocal = anchorLocal.clone().applyAxisAngle(axisVec, 0.18);
+    const movedWorld = cubeRoot.localToWorld(movedLocal);
+    const movedScreen = projectWorldPoint(movedWorld);
+    const direction = movedScreen.sub(startScreen);
+    const length = direction.length();
+    if (length < 0.5) continue;
+
+    direction.divideScalar(length);
+    candidates.push({
+      axis,
+      layer: coordForAxis(cubelet.coord, axis),
+      unitX: direction.x,
+      unitY: direction.y
+    });
+  }
+
+  return candidates;
+}
+
+function chooseTurn(candidates: TurnCandidate[], dx: number, dy: number): TurnCandidate | null {
+  const length = Math.hypot(dx, dy);
+  if (length < 0.001) return null;
+  const swipeX = dx / length;
+  const swipeY = dy / length;
+
+  let best: TurnCandidate | null = null;
+  let bestAlignment = -Infinity;
+  for (const candidate of candidates) {
+    const alignment = Math.abs(swipeX * candidate.unitX + swipeY * candidate.unitY);
+    if (alignment > bestAlignment) {
+      bestAlignment = alignment;
+      best = candidate;
+    }
+  }
+  return best;
+}
+
+function showGestureGuide(clientX: number, clientY: number, candidates: TurnCandidate[]) {
+  gestureGuide.style.left = `${clientX}px`;
+  gestureGuide.style.top = `${clientY}px`;
+  gestureGuide.classList.add('visible');
+  guideAxes.forEach((axisEl, index) => {
+    const candidate = candidates[index];
+    axisEl.hidden = !candidate;
+    if (!candidate) return;
+    const angle = Math.atan2(candidate.unitY, candidate.unitX) * 180 / Math.PI;
+    axisEl.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+    axisEl.classList.remove('active');
+  });
+}
+
+function lockGestureGuide(candidate: TurnCandidate) {
+  guideAxes.forEach((axisEl, index) => {
+    const item = turnGesture?.candidates[index];
+    axisEl.classList.toggle('active', Boolean(item && item.axis === candidate.axis));
+  });
+}
+
+function hideGestureGuide() {
+  gestureGuide.classList.remove('visible');
+  guideAxes.forEach(axisEl => axisEl.classList.remove('active'));
+}
+
+function detachSelected(selected: Cubelet[]) {
+  turnPivot.rotation.set(0, 0, 0);
+  turnPivot.pos

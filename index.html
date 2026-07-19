@@ -24,15 +24,31 @@
 
       <section class="hint-card" id="hint-card">
         <strong>Push a row</strong>
-        <span>Swipe directly on the cube. Drag empty space to look around.</span>
+        <span>Swipe the cube to twist. Use two fingers to look and pinch to zoom.</span>
       </section>
 
       <nav class="hud controls" aria-label="Game controls">
         <button id="undo-btn" type="button">↶ <span>Undo</span></button>
-        <button id="scramble-btn" class="primary" type="button">✦ <span>Scramble</span></button>
-        <button id="reset-btn" type="button">↺ <span>Reset</span></button>
-        <button id="view-btn" type="button">◇ <span>View</span></button>
+        <button id="view-btn" class="primary" type="button" aria-pressed="false">◇ <span>View</span></button>
+        <button id="menu-btn" type="button" aria-expanded="false" aria-controls="game-menu">••• <span>More</span></button>
       </nav>
+
+      <section class="game-menu" id="game-menu" hidden aria-label="More game actions">
+        <button id="scramble-btn" type="button">✦ <span><strong>Scramble cube</strong><small>Start a new random puzzle</small></span></button>
+        <button id="reset-btn" class="danger" type="button">↺ <span><strong>Reset cube</strong><small>Return to the solved state</small></span></button>
+      </section>
+
+      <dialog class="confirm-dialog" id="confirm-dialog">
+        <form method="dialog">
+          <p class="dialog-eyebrow">Please confirm</p>
+          <h2 id="confirm-title">Start over?</h2>
+          <p id="confirm-copy">This will replace your current cube.</p>
+          <div class="dialog-actions">
+            <button value="cancel" type="submit">Cancel</button>
+            <button id="confirm-action" class="danger" value="confirm" type="submit">Continue</button>
+          </div>
+        </form>
+      </dialog>
 
       <div class="status-pill" id="status-pill" role="status">Ready</div>
     </main>

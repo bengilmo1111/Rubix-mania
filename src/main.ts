@@ -64,6 +64,9 @@ const confirmDialog = document.querySelector<HTMLDialogElement>('#confirm-dialog
 const confirmTitle = document.querySelector<HTMLElement>('#confirm-title')!;
 const confirmCopy = document.querySelector<HTMLElement>('#confirm-copy')!;
 const confirmAction = document.querySelector<HTMLButtonElement>('#confirm-action')!;
+const levelBtn = document.querySelector<HTMLButtonElement>('#level-btn')!;
+const levelSelect = document.querySelector<HTMLElement>('#level-select')!;
+const levelButtons = [...document.querySelectorAll<HTMLButtonElement>('.level-option')];
 
 const scene = new THREE.Scene();
 scene.fog = new THREE.FogExp2(0x07091c, 0.035);
@@ -154,9 +157,9 @@ scene.add(brightStars);
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
-const size = 2;
+let size = 3;
 const spacing = 1.08;
-const half = (size - 1) / 2;
+let half = (size - 1) / 2;
 const cubelets: Cubelet[] = [];
 const moveHistory: CubeMove[] = [];
 let moveCount = 0;
@@ -165,14 +168,15 @@ let orbitGesture: OrbitGesture | null = null;
 const activePointers = new Map<number, ActivePointer>();
 let viewMode = false;
 let animating = false;
+let levelSelectOpen = false;
 let statusTimeout = 0;
 let pendingDangerAction: 'scramble' | 'reset' | null = null;
 
 let cameraYaw = Math.PI / 4;
 let cameraPitch = 0.42;
 let cameraDistance = 7.3;
-const minCameraDistance = 5.4;
-const maxCameraDistance = 10.5;
+let minCameraDistance = 5.4;
+let maxCameraDistance = 10.5;
 
 const bodyMaterial = new THREE.MeshStandardMaterial({
   color: 0x111522,
@@ -273,13 +277,6 @@ function setCubeletTransform(cubelet: Cubelet) {
     (cubelet.coord.z - half) * spacing
   );
 }
-
-for (let x = 0; x < size; x++) {
-  for (let y = 0; y < size; y++) {
-    for (let z = 0; z < size; z++) cubelets.push(makeCubelet(x, y, z));
-  }
-}
-
 const shadowPlane = new THREE.Mesh(
   new THREE.CircleGeometry(2.25, 64),
   new THREE.ShadowMaterial({ color: 0x000000, opacity: 0.22 })
@@ -288,6 +285,48 @@ shadowPlane.rotation.x = -Math.PI / 2;
 shadowPlane.position.y = -2.12;
 shadowPlane.receiveShadow = true;
 scene.add(shadowPlane);
+
+// Distance from the cube centre to the outer face of an edge cubelet.
+function cubeExtent(): number {
+  return (size - 1) / 2 * spacing + 0.5;
+}
+
+// Reframe the camera, floor shadow and glow so every cube size fills a
+// similar fraction of the screen and rests on the same visual ground plane.
+function frameCubeForSize() {
+  const extent = cubeExtent();
+  cameraDistance = extent / 0.145;
+  minCameraDistance = cameraDistance * 0.72;
+  maxCameraDistance = cameraDistance * 1.65;
+  const bottom = -extent;
+  const groundScale = extent / cubeExtentFor(2);
+  shadowPlane.position.y = bottom - 0.05;
+  shadowPlane.scale.setScalar(groundScale);
+  glow.position.y = bottom - 0.1;
+  glow.scale.setScalar(groundScale);
+}
+
+function cubeExtentFor(n: number): number {
+  return (n - 1) / 2 * spacing + 0.5;
+}
+
+function buildCube(nextSize: number) {
+  cubelets.forEach(c => cubeRoot.remove(c.group));
+  cubelets.length = 0;
+  size = nextSize;
+  half = (size - 1) / 2;
+  for (let x = 0; x < size; x++) {
+    for (let y = 0; y < size; y++) {
+      for (let z = 0; z < size; z++) cubelets.push(makeCubelet(x, y, z));
+    }
+  }
+  moveHistory.length = 0;
+  moveCount = 0;
+  moveCountEl.textContent = '0';
+  frameCubeForSize();
+  updateCamera();
+  updateButtons();
+}
 
 function updateCamera() {
   camera.position.set(
@@ -579,7 +618,7 @@ function cancelTurnPreviewForOrbit() {
 }
 
 canvas.addEventListener('pointerdown', event => {
-  if (animating) return;
+  if (animating || levelSelectOpen) return;
   canvas.setPointerCapture(event.pointerId);
   const hit = firstCubeHit(event);
   activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY, startedOnCube: Boolean(hit) });
@@ -729,14 +768,15 @@ async function scrambleCube() {
   showStatus('Scrambling…');
   const moves: CubeMove[] = [];
   let previousAxis: Axis | null = null;
-  for (let i = 0; i < 10; i++) {
+  const turns = size === 2 ? 12 : size === 3 ? 25 : 40;
+  for (let i = 0; i < turns; i++) {
     const axes: Axis[] = ['x', 'y', 'z'];
     let axis = axes[Math.floor(Math.random() * axes.length)];
     while (axis === previousAxis) axis = axes[Math.floor(Math.random() * axes.length)];
     previousAxis = axis;
     moves.push({
       axis,
-      layer: Math.random() > 0.5 ? 0 : size - 1,
+      layer: Math.floor(Math.random() * size),
       quarterTurns: Math.random() > 0.5 ? 1 : -1
     });
   }
@@ -802,6 +842,34 @@ document.addEventListener('pointerdown', event => {
   if (!gameMenu.contains(target) && !menuBtn.contains(target)) closeGameMenu();
 });
 
+function openLevelSelect() {
+  levelSelectOpen = true;
+  closeGameMenu();
+  levelButtons.forEach(b => b.classList.toggle('active', Number(b.dataset.size) === size));
+  levelSelect.classList.add('open');
+}
+
+function selectLevel(nextSize: number) {
+  const rebuild = nextSize !== size || cubelets.length === 0;
+  levelSelectOpen = false;
+  levelSelect.classList.remove('open');
+  if (rebuild) {
+    buildCube(nextSize);
+    hintCard.classList.remove('hidden');
+    showStatus(`${nextSize}×${nextSize} · fresh cube`);
+  }
+}
+
+levelBtn.addEventListener('click', openLevelSelect);
+levelButtons.forEach(btn => btn.addEventListener('click', () => selectLevel(Number(btn.dataset.size))));
+levelSelect.addEventListener('pointerdown', event => {
+  // Tapping the dimmed backdrop cancels — but only once a cube already exists.
+  if (event.target === levelSelect && cubelets.length > 0) {
+    levelSelectOpen = false;
+    levelSelect.classList.remove('open');
+  }
+});
+
 viewBtn.addEventListener('click', () => {
   viewMode = !viewMode;
   viewBtn.classList.toggle('active', viewMode);
@@ -824,6 +892,7 @@ window.addEventListener('resize', resize);
 updateCamera();
 resize();
 updateButtons();
+openLevelSelect();
 
 const clock = new THREE.Clock();
 function render() {

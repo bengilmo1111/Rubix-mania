@@ -28,9 +28,9 @@ scene.add(brightStars);
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
-const size = 2;
+let size = 3;
 const spacing = 1.08;
-const half = (size - 1) / 2;
+let half = (size - 1) / 2;
 const cubelets: Cubelet[] = [];
 const moveHistory: CubeMove[] = [];
 let moveCount = 0;
@@ -39,14 +39,15 @@ let orbitGesture: OrbitGesture | null = null;
 const activePointers = new Map<number, ActivePointer>();
 let viewMode = false;
 let animating = false;
+let levelSelectOpen = false;
 let statusTimeout = 0;
 let pendingDangerAction: 'scramble' | 'reset' | null = null;
 
 let cameraYaw = Math.PI / 4;
 let cameraPitch = 0.42;
 let cameraDistance = 7.3;
-const minCameraDistance = 5.4;
-const maxCameraDistance = 10.5;
+let minCameraDistance = 5.4;
+let maxCameraDistance = 10.5;
 
 const bodyMaterial = new THREE.MeshStandardMaterial({
   color: 0x111522,
@@ -147,5 +148,3 @@ function setCubeletTransform(cubelet: Cubelet) {
     (cubelet.coord.z - half) * spacing
   );
 }
-
-fo

@@ -1,9 +1,3 @@
-r (let x = 0; x < size; x++) {
-  for (let y = 0; y < size; y++) {
-    for (let z = 0; z < size; z++) cubelets.push(makeCubelet(x, y, z));
-  }
-}
-
 const shadowPlane = new THREE.Mesh(
   new THREE.CircleGeometry(2.25, 64),
   new THREE.ShadowMaterial({ color: 0x000000, opacity: 0.22 })
@@ -12,6 +6,48 @@ shadowPlane.rotation.x = -Math.PI / 2;
 shadowPlane.position.y = -2.12;
 shadowPlane.receiveShadow = true;
 scene.add(shadowPlane);
+
+// Distance from the cube centre to the outer face of an edge cubelet.
+function cubeExtent(): number {
+  return (size - 1) / 2 * spacing + 0.5;
+}
+
+// Reframe the camera, floor shadow and glow so every cube size fills a
+// similar fraction of the screen and rests on the same visual ground plane.
+function frameCubeForSize() {
+  const extent = cubeExtent();
+  cameraDistance = extent / 0.145;
+  minCameraDistance = cameraDistance * 0.72;
+  maxCameraDistance = cameraDistance * 1.65;
+  const bottom = -extent;
+  const groundScale = extent / cubeExtentFor(2);
+  shadowPlane.position.y = bottom - 0.05;
+  shadowPlane.scale.setScalar(groundScale);
+  glow.position.y = bottom - 0.1;
+  glow.scale.setScalar(groundScale);
+}
+
+function cubeExtentFor(n: number): number {
+  return (n - 1) / 2 * spacing + 0.5;
+}
+
+function buildCube(nextSize: number) {
+  cubelets.forEach(c => cubeRoot.remove(c.group));
+  cubelets.length = 0;
+  size = nextSize;
+  half = (size - 1) / 2;
+  for (let x = 0; x < size; x++) {
+    for (let y = 0; y < size; y++) {
+      for (let z = 0; z < size; z++) cubelets.push(makeCubelet(x, y, z));
+    }
+  }
+  moveHistory.length = 0;
+  moveCount = 0;
+  moveCountEl.textContent = '0';
+  frameCubeForSize();
+  updateCamera();
+  updateButtons();
+}
 
 function updateCamera() {
   camera.position.set(

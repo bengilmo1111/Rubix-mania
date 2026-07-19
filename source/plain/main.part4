@@ -1,0 +1,136 @@
+ition.set(0, 0, 0);
+  selected.forEach(c => turnPivot.attach(c.group));
+}
+
+function returnSelected(selected: Cubelet[]) {
+  turnPivot.updateMatrixWorld(true);
+  selected.forEach(c => cubeRoot.attach(c.group));
+  turnPivot.rotation.set(0, 0, 0);
+}
+
+function setPivotAngle(axis: Axis, angle: number) {
+  turnPivot.rotation.set(0, 0, 0);
+  turnPivot.rotation[axis] = angle;
+}
+
+function rotateCoord(coord: Vec3Int, axis: Axis, quarterTurns: -1 | 1): Vec3Int {
+  const centered = new THREE.Vector3(coord.x - half, coord.y - half, coord.z - half);
+  centered.applyAxisAngle(axisVector(axis), quarterTurns * Math.PI / 2);
+  return {
+    x: Math.round(centered.x + half),
+    y: Math.round(centered.y + half),
+    z: Math.round(centered.z + half)
+  };
+}
+
+function snapQuaternion(q: THREE.Quaternion) {
+  const e = new THREE.Euler().setFromQuaternion(q, 'XYZ');
+  e.x = Math.round(e.x / (Math.PI / 2)) * (Math.PI / 2);
+  e.y = Math.round(e.y / (Math.PI / 2)) * (Math.PI / 2);
+  e.z = Math.round(e.z / (Math.PI / 2)) * (Math.PI / 2);
+  q.setFromEuler(e).normalize();
+}
+
+function commitSelected(selected: Cubelet[], move: CubeMove) {
+  selected.forEach(cubelet => {
+    cubelet.coord = rotateCoord(cubelet.coord, move.axis, move.quarterTurns);
+    snapQuaternion(cubelet.group.quaternion);
+    setCubeletTransform(cubelet);
+  });
+}
+
+function animatePivot(
+  selected: Cubelet[],
+  axis: Axis,
+  from: number,
+  to: number,
+  duration: number,
+  onDone: () => void
+) {
+  animating = true;
+  const start = performance.now();
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const actualDuration = reduced ? 1 : duration;
+
+  const frame = (now: number) => {
+    const t = Math.min(1, (now - start) / actualDuration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    setPivotAngle(axis, THREE.MathUtils.lerp(from, to, eased));
+    if (t < 1) requestAnimationFrame(frame);
+    else {
+      onDone();
+      animating = false;
+      updateButtons();
+    }
+  };
+  requestAnimationFrame(frame);
+}
+
+function completePreview(gesture: TurnGesture, commit: boolean, record = true) {
+  if (!gesture.axis || !gesture.selected.length) return;
+  const target = commit ? gesture.sign * Math.PI / 2 : 0;
+  animatePivot(gesture.selected, gesture.axis, gesture.angle, target, commit ? 180 : 150, () => {
+    if (commit) {
+      const move: CubeMove = {
+        axis: gesture.axis!,
+        layer: gesture.layer,
+        quarterTurns: gesture.sign
+      };
+      returnSelected(gesture.selected);
+      commitSelected(gesture.selected, move);
+      if (record) {
+        moveHistory.push(move);
+        moveCount++;
+        moveCountEl.textContent = String(moveCount);
+        hintCard.classList.add('hidden');
+      }
+      if (isSolved()) showStatus('Cube solved! ✦');
+    } else {
+      returnSelected(gesture.selected);
+      gesture.selected.forEach(setCubeletTransform);
+    }
+  });
+}
+
+function performMove(move: CubeMove, record = true, duration = 160): Promise<void> {
+  return new Promise(resolve => {
+    const selected = cubelets.filter(c => coordForAxis(c.coord, move.axis) === move.layer);
+    detachSelected(selected);
+    animatePivot(selected, move.axis, 0, move.quarterTurns * Math.PI / 2, duration, () => {
+      returnSelected(selected);
+      commitSelected(selected, move);
+      if (record) {
+        moveHistory.push(move);
+        moveCount++;
+        moveCountEl.textContent = String(moveCount);
+      }
+      resolve();
+    });
+  });
+}
+
+function isSolved(): boolean {
+  const faceKeys = [
+    { normal: new THREE.Vector3(1,0,0), coord: 'x' as Axis, value: size - 1 },
+    { normal: new THREE.Vector3(-1,0,0), coord: 'x' as Axis, value: 0 },
+    { normal: new THREE.Vector3(0,1,0), coord: 'y' as Axis, value: size - 1 },
+    { normal: new THREE.Vector3(0,-1,0), coord: 'y' as Axis, value: 0 },
+    { normal: new THREE.Vector3(0,0,1), coord: 'z' as Axis, value: size - 1 },
+    { normal: new THREE.Vector3(0,0,-1), coord: 'z' as Axis, value: 0 }
+  ];
+
+  return faceKeys.every(face => {
+    const candidates = cubelets.filter(c => coordForAxis(c.coord, face.coord) === face.value);
+    const outwardHomeFaces = candidates.map(c => {
+      const inv = c.group.quaternion.clone().invert();
+      return face.normal.clone().applyQuaternion(inv).round();
+    });
+    const first = outwardHomeFaces[0];
+    return outwardHomeFaces.every(n => n.equals(first));
+  });
+}
+
+function showStatus(message: string) {
+  statusPill.textContent = message;
+  statusPill.classList.add('show');
+  window.cl

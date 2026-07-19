@@ -1,2 +1,827 @@
-// @ts-nocheck
-import*as n from"three";import"./style.css";const M=document.querySelector("#game-canvas"),L=document.querySelector("#move-count"),Ue=document.querySelector("#hint-card"),K=document.querySelector("#status-pill"),pe=document.querySelector("#undo-btn"),Me=document.querySelector("#scramble-btn"),be=document.querySelector("#reset-btn"),I=document.querySelector("#view-btn"),B=document.querySelector("#menu-btn"),Y=document.querySelector("#game-menu"),Z=document.querySelector("#confirm-dialog"),ke=document.querySelector("#confirm-title"),Fe=document.querySelector("#confirm-copy"),We=document.querySelector("#confirm-action"),p=new n.Scene;p.fog=new n.FogExp2(461084,.035);const b=new n.PerspectiveCamera(38,1,.1,100),S=new n.WebGLRenderer({canvas:M,antialias:!0,alpha:!0,powerPreference:"high-performance"});S.setPixelRatio(Math.min(window.devicePixelRatio,2)),S.outputColorSpace=n.SRGBColorSpace,S.shadowMap.enabled=!0,S.shadowMap.type=n.PCFSoftShadowMap;const H=new n.Group;p.add(H);const y=new n.Group;H.add(y),p.add(new n.HemisphereLight(11057151,1445426,2.6));const J=new n.DirectionalLight(16777215,4.3);J.position.set(4,7,6),J.castShadow=!0,p.add(J);const we=new n.PointLight(7825151,24,18);we.position.set(-5,2,-4),p.add(we);const G=new n.Mesh(new n.CircleGeometry(2.7,64),new n.MeshBasicMaterial({color:6903039,transparent:!0,opacity:.085,depthWrite:!1}));G.position.set(0,-2.15,0),G.rotation.x=-Math.PI/2,p.add(G);const xe=new n.BufferGeometry,_=1500,R=new Float32Array(_*3),je=new Float32Array(_);for(let e=0;e<_;e++){const t=n.MathUtils.randFloat(11,38),o=Math.random()*Math.PI*2,r=Math.acos(n.MathUtils.randFloatSpread(2));R[e*3]=t*Math.sin(r)*Math.cos(o),R[e*3+1]=t*Math.cos(r),R[e*3+2]=t*Math.sin(r)*Math.sin(o),je[e]=Math.random()}xe.setAttribute("position",new n.BufferAttribute(R,3));const ee=new n.Points(xe,new n.PointsMaterial({color:14476543,size:.09,transparent:!0,opacity:.98,sizeAttenuation:!0,depthWrite:!1}));p.add(ee);const ye=new n.BufferGeometry,ge=120,U=new Float32Array(ge*3);for(let e=0;e<ge;e++){const t=n.MathUtils.randFloat(12,32),o=Math.random()*Math.PI*2,r=Math.acos(n.MathUtils.randFloatSpread(2));U[e*3]=t*Math.sin(r)*Math.cos(o),U[e*3+1]=t*Math.cos(r),U[e*3+2]=t*Math.sin(r)*Math.sin(o)}ye.setAttribute("position",new n.BufferAttribute(U,3));const te=new n.Points(ye,new n.PointsMaterial({color:16777215,size:.18,transparent:!0,opacity:.96,sizeAttenuation:!0,depthWrite:!1}));p.add(te);const Ce=new n.Raycaster,ne=new n.Vector2,u=2,oe=1.08,w=(u-1)/2,E=[],v=[];let x=0,a=null,d=null;const m=new Map;let g=!1,h=!1,Se=0,re=null,ae=Math.PI/4,z=.42,q=7.3;const Oe=5.4,Ne=10.5,Qe=new n.MeshStandardMaterial({color:1119522,roughness:.28,metalness:.14}),$e=new n.MeshStandardMaterial({color:2435902,roughness:.45,metalness:.08}),P={px:new n.MeshStandardMaterial({color:15884124,roughness:.24}),nx:new n.MeshStandardMaterial({color:16752412,roughness:.24}),py:new n.MeshStandardMaterial({color:16770669,roughness:.24}),ny:new n.MeshStandardMaterial({color:16250879,roughness:.24}),pz:new n.MeshStandardMaterial({color:4444541,roughness:.24}),nz:new n.MeshStandardMaterial({color:5859583,roughness:.24})},Ee=new n.BoxGeometry(.98,.98,.98,3,3,3);Ee.computeVertexNormals();const Ke=new n.BoxGeometry(.76,.76,.055,2,2,1);function T(e,t){const o=new n.Mesh(Ke,e);return o.position.copy(t).multiplyScalar(.515),o.quaternion.setFromUnitVectors(new n.Vector3(0,0,1),t),o.castShadow=!1,o.receiveShadow=!1,o.userData.isSticker=!0,o}function Ze(e,t,o){const r=new n.Group,s=new n.Mesh(Ee,Qe);s.castShadow=!0,s.receiveShadow=!0,s.userData.isBody=!0,r.add(s);const i=new n.LineSegments(new n.EdgesGeometry(new n.BoxGeometry(.985,.985,.985)),new n.LineBasicMaterial({color:$e.color,transparent:!0,opacity:.5}));r.add(i),e===u-1&&r.add(T(P.px,new n.Vector3(1,0,0))),e===0&&r.add(T(P.nx,new n.Vector3(-1,0,0))),t===u-1&&r.add(T(P.py,new n.Vector3(0,1,0))),t===0&&r.add(T(P.ny,new n.Vector3(0,-1,0))),o===u-1&&r.add(T(P.pz,new n.Vector3(0,0,1))),o===0&&r.add(T(P.nz,new n.Vector3(0,0,-1)));const l={id:`${e}-${t}-${o}`,home:{x:e,y:t,z:o},coord:{x:e,y:t,z:o},group:r};return r.userData.cubelet=l,r.traverse(c=>{c.userData.cubelet=l}),k(l),H.add(r),l}function k(e){e.group.position.set((e.coord.x-w)*oe,(e.coord.y-w)*oe,(e.coord.z-w)*oe)}for(let e=0;e<u;e++)for(let t=0;t<u;t++)for(let o=0;o<u;o++)E.push(Ze(e,t,o));const F=new n.Mesh(new n.CircleGeometry(2.25,64),new n.ShadowMaterial({color:0,opacity:.22}));F.rotation.x=-Math.PI/2,F.position.y=-2.12,F.receiveShadow=!0,p.add(F);function ve(){b.position.set(Math.sin(ae)*Math.cos(z)*q,Math.sin(z)*q,Math.cos(ae)*Math.cos(z)*q),b.lookAt(0,0,0)}function Je(e){const t=M.getBoundingClientRect();ne.x=(e.clientX-t.left)/t.width*2-1,ne.y=-((e.clientY-t.top)/t.height)*2+1,Ce.setFromCamera(ne,b)}function _e(e){return Je(e),Ce.intersectObjects(E.map(o=>o.group),!0).find(o=>o.object.userData.cubelet)??null}function et(e){return(e.face?.normal.clone()??new n.Vector3(0,0,1)).transformDirection(e.object.matrixWorld).round()}function Pe(e){return e==="x"?new n.Vector3(1,0,0):e==="y"?new n.Vector3(0,1,0):new n.Vector3(0,0,1)}function W(e,t){return e[t]}function tt(e,t,o,r){const s=new n.Vector3;b.getWorldDirection(s);const i=new n.Vector3().crossVectors(s,b.up).normalize(),l=new n.Vector3().crossVectors(i,s).normalize(),c=Math.max(Math.hypot(t,o),1e-4),f=t/c,V=o/c,O=["x","y","z"];let C="x",D=-1/0,N=1,Q=0;for(const ie of O){const ce=Pe(ie);if(Math.abs(ce.dot(e))>.5)continue;const le=new n.Vector3().crossVectors(ce,e).normalize(),ue=le.dot(i),de=-le.dot(l),$=Math.hypot(ue,de);if($<1e-4)continue;const me=ue/$,he=de/$,fe=Math.abs(f*me+V*he);fe>D&&(D=fe,C=ie,N=me,Q=he)}const Re=f*N+V*Q>=0?1:-1;return{axis:C,layer:W(r.coord,C),sign:Re,dragUnitX:N,dragUnitY:Q}}function Te(e){y.rotation.set(0,0,0),y.position.set(0,0,0),e.forEach(t=>y.attach(t.group))}function se(e){y.updateMatrixWorld(!0),e.forEach(t=>H.attach(t.group)),y.rotation.set(0,0,0)}function Ae(e,t){y.rotation.set(0,0,0),y.rotation[e]=t}function nt(e,t,o){const r=new n.Vector3(e.x-w,e.y-w,e.z-w);return r.applyAxisAngle(Pe(t),o*Math.PI/2),{x:Math.round(r.x+w),y:Math.round(r.y+w),z:Math.round(r.z+w)}}function ot(e){const t=new n.Euler().setFromQuaternion(e,"XYZ");t.x=Math.round(t.x/(Math.PI/2))*(Math.PI/2),t.y=Math.round(t.y/(Math.PI/2))*(Math.PI/2),t.z=Math.round(t.z/(Math.PI/2))*(Math.PI/2),e.setFromEuler(t).normalize()}function Ve(e,t){e.forEach(o=>{o.coord=nt(o.coord,t.axis,t.quarterTurns),ot(o.group.quaternion),k(o)})}function Le(e,t,o,r,s,i){h=!0;const l=performance.now(),f=matchMedia("(prefers-reduced-motion: reduce)").matches?1:s,V=O=>{const C=Math.min(1,(O-l)/f),D=1-Math.pow(1-C,3);Ae(t,n.MathUtils.lerp(o,r,D)),C<1?requestAnimationFrame(V):(i(),h=!1,X())};requestAnimationFrame(V)}function Ie(e,t,o=!0){if(!e.axis||!e.selected.length)return;const r=t?e.sign*Math.PI/2:0;Le(e.selected,e.axis,e.angle,r,t?180:150,()=>{if(t){const s={axis:e.axis,layer:e.layer,quarterTurns:e.sign};se(e.selected),Ve(e.selected,s),o&&(v.push(s),x++,L.textContent=String(x),Ue.classList.add("hidden")),rt()&&A("Cube solved! ✦")}else se(e.selected),e.selected.forEach(k)})}function Ye(e,t=!0,o=160){return new Promise(r=>{const s=E.filter(i=>W(i.coord,e.axis)===e.layer);Te(s),Le(s,e.axis,0,e.quarterTurns*Math.PI/2,o,()=>{se(s),Ve(s,e),t&&(v.push(e),x++,L.textContent=String(x)),r()})})}function rt(){return[{normal:new n.Vector3(1,0,0),coord:"x",value:u-1},{normal:new n.Vector3(-1,0,0),coord:"x",value:0},{normal:new n.Vector3(0,1,0),coord:"y",value:u-1},{normal:new n.Vector3(0,-1,0),coord:"y",value:0},{normal:new n.Vector3(0,0,1),coord:"z",value:u-1},{normal:new n.Vector3(0,0,-1),coord:"z",value:0}].every(t=>{const r=E.filter(i=>W(i.coord,t.coord)===t.value).map(i=>{const l=i.group.quaternion.clone().invert();return t.normal.clone().applyQuaternion(l).round()}),s=r[0];return r.every(i=>i.equals(s))})}function A(e){K.textContent=e,K.classList.add("show"),window.clearTimeout(Se),Se=window.setTimeout(()=>K.classList.remove("show"),1500)}function X(){pe.disabled=h||v.length===0,Me.disabled=h,be.disabled=h,I.disabled=h}function He(){const e=[...m.values()],t=e.reduce((o,r)=>({x:o.x+r.x,y:o.y+r.y}),{x:0,y:0});return{x:t.x/e.length,y:t.y/e.length}}function ze(){const e=[...m.values()];return e.length<2?null:Math.hypot(e[0].x-e[1].x,e[0].y-e[1].y)}function j(){const e=He();d={lastCenterX:e.x,lastCenterY:e.y,lastDistance:ze()}}function at(){if(!a)return;const e=a;a=null,e.locked&&e.axis&&Ie(e,!1,!1)}M.addEventListener("pointerdown",e=>{if(h)return;M.setPointerCapture(e.pointerId);const t=_e(e);if(m.set(e.pointerId,{x:e.clientX,y:e.clientY,startedOnCube:!!t}),m.size>=2){at(),j();return}if(g){t&&j();return}if(!t)return;const o=t.object.userData.cubelet;a={pointerId:e.pointerId,startX:e.clientX,startY:e.clientY,lastX:e.clientX,lastY:e.clientY,lastTime:e.timeStamp,velocity:0,hitNormalWorld:et(t),hitCubelet:o,locked:!1,axis:null,layer:0,sign:1,angle:0,selected:[],dragUnitX:0,dragUnitY:0}}),M.addEventListener("pointermove",e=>{if(!m.has(e.pointerId))return;const t=m.get(e.pointerId);m.set(e.pointerId,{...t,x:e.clientX,y:e.clientY});const o=[...m.values()].some(r=>r.startedOnCube);if((m.size>=2||g||d)&&o){d||j();const r=He(),s=r.x-d.lastCenterX,i=r.y-d.lastCenterY;ae-=s*.008,z=n.MathUtils.clamp(z+i*.006,-.85,.95);const l=ze();if(l!==null&&d.lastDistance!==null){const c=l-d.lastDistance;q=n.MathUtils.clamp(q-c*.018,Oe,Ne)}d.lastCenterX=r.x,d.lastCenterY=r.y,d.lastDistance=l,ve();return}if(a?.pointerId===e.pointerId){const r=e.clientX-a.startX,s=e.clientY-a.startY,i=Math.hypot(r,s),l=Math.max(1,e.timeStamp-a.lastTime);if(a.velocity=Math.hypot(e.clientX-a.lastX,e.clientY-a.lastY)/l,a.lastX=e.clientX,a.lastY=e.clientY,a.lastTime=e.timeStamp,!a.locked&&i>5){const c=tt(a.hitNormalWorld,r,s,a.hitCubelet);a.axis=c.axis,a.layer=c.layer,a.sign=c.sign,a.dragUnitX=c.dragUnitX,a.dragUnitY=c.dragUnitY,a.selected=E.filter(f=>W(f.coord,c.axis)===c.layer),Te(a.selected),a.locked=!0}if(a.locked&&a.axis){const c=r*a.dragUnitX+s*a.dragUnitY,f=n.MathUtils.clamp(c*.0125,-1.82,1.82);a.angle=f,a.sign=f>=0?1:-1,Ae(a.axis,f)}}});function qe(e){if(m.delete(e.pointerId),a?.pointerId===e.pointerId){const t=a;if(a=null,t.locked&&t.axis){const o=Math.abs(t.angle)>=n.MathUtils.degToRad(42)||t.velocity>.65;Ie(t,o)}}m.size===0?d=null:j()}M.addEventListener("pointerup",qe),M.addEventListener("pointercancel",qe),pe.addEventListener("click",async()=>{if(h)return;const e=v.pop();e&&(await Ye({...e,quarterTurns:e.quarterTurns*-1},!1),x=Math.max(0,x-1),L.textContent=String(x),A("Move undone"),X())});async function st(){if(h)return;A("Scrambling…");const e=[];let t=null;for(let o=0;o<10;o++){const r=["x","y","z"];let s=r[Math.floor(Math.random()*r.length)];for(;s===t;)s=r[Math.floor(Math.random()*r.length)];t=s,e.push({axis:s,layer:Math.random()>.5?0:u-1,quarterTurns:Math.random()>.5?1:-1})}for(const o of e)await Ye(o,!1,80);v.length=0,x=0,L.textContent="0",A("Your turn!"),X()}function it(){h||(E.forEach(e=>{e.coord={...e.home},e.group.quaternion.identity(),k(e)}),v.length=0,x=0,L.textContent="0",A("Cube reset"),X())}function Xe(){Y.hidden=!0,B.setAttribute("aria-expanded","false")}function De(e){re=e,Xe();const t=e==="scramble";ke.textContent=t?"Scramble this cube?":"Reset this cube?",Fe.textContent=t?"Your current progress will be replaced with a new random puzzle.":"Your current progress will be cleared and the cube returned to solved.",We.textContent=t?"Scramble":"Reset",Z.showModal()}B.addEventListener("click",()=>{const e=Y.hidden;Y.hidden=!e,B.setAttribute("aria-expanded",String(e))}),Me.addEventListener("click",()=>De("scramble")),be.addEventListener("click",()=>De("reset")),Z.addEventListener("close",async()=>{const e=re;re=null,!(Z.returnValue!=="confirm"||!e)&&(e==="scramble"?await st():it())}),document.addEventListener("pointerdown",e=>{if(Y.hidden)return;const t=e.target;!Y.contains(t)&&!B.contains(t)&&Xe()}),I.addEventListener("click",()=>{g=!g,I.classList.toggle("active",g),I.setAttribute("aria-pressed",String(g));const e=I.querySelector("span");e&&(e.textContent=g?"Done":"View"),A(g?"View mode: drag on the cube":"Twist mode")});function Be(){const e=M.clientWidth,t=M.clientHeight;S.setSize(e,t,!1),b.aspect=e/Math.max(t,1),b.fov=e<520?42:36,b.updateProjectionMatrix()}window.addEventListener("resize",Be),ve(),Be(),X();const ct=new n.Clock;function Ge(){const e=ct.getElapsedTime();ee.rotation.y=e*.006,ee.rotation.x=Math.sin(e*.08)*.025,te.rotation.y=-e*.003,te.rotation.z=Math.sin(e*.06)*.02,G.material.opacity=.075+Math.sin(e*1.2)*.012,!a&&!h&&(H.position.y=Math.sin(e*.85)*.055),S.render(p,b),requestAnimationFrame(Ge)}Ge();
+import * as THREE from 'three';
+import './style.css';
+
+type Axis = 'x' | 'y' | 'z';
+type CubeMove = { axis: Axis; layer: number; quarterTurns: -1 | 1 };
+type Vec3Int = { x: number; y: number; z: number };
+
+type Cubelet = {
+  id: string;
+  home: Vec3Int;
+  coord: Vec3Int;
+  group: THREE.Group;
+};
+
+type TurnCandidate = {
+  axis: Axis;
+  layer: number;
+  unitX: number;
+  unitY: number;
+};
+
+type TurnGesture = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  lastX: number;
+  lastY: number;
+  lastTime: number;
+  velocity: number;
+  hitNormalWorld: THREE.Vector3;
+  hitCubelet: Cubelet;
+  anchorPointWorld: THREE.Vector3;
+  candidates: TurnCandidate[];
+  locked: boolean;
+  axis: Axis | null;
+  layer: number;
+  sign: -1 | 1;
+  angle: number;
+  selected: Cubelet[];
+  dragUnitX: number;
+  dragUnitY: number;
+};
+
+type ActivePointer = { x: number; y: number; startedOnCube: boolean };
+
+type OrbitGesture = {
+  lastCenterX: number;
+  lastCenterY: number;
+  lastDistance: number | null;
+};
+
+const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas')!;
+const moveCountEl = document.querySelector<HTMLElement>('#move-count')!;
+const hintCard = document.querySelector<HTMLElement>('#hint-card')!;
+const statusPill = document.querySelector<HTMLElement>('#status-pill')!;
+const undoBtn = document.querySelector<HTMLButtonElement>('#undo-btn')!;
+const scrambleBtn = document.querySelector<HTMLButtonElement>('#scramble-btn')!;
+const resetBtn = document.querySelector<HTMLButtonElement>('#reset-btn')!;
+const viewBtn = document.querySelector<HTMLButtonElement>('#view-btn')!;
+const menuBtn = document.querySelector<HTMLButtonElement>('#menu-btn')!;
+const gameMenu = document.querySelector<HTMLElement>('#game-menu')!;
+const confirmDialog = document.querySelector<HTMLDialogElement>('#confirm-dialog')!;
+const confirmTitle = document.querySelector<HTMLElement>('#confirm-title')!;
+const confirmCopy = document.querySelector<HTMLElement>('#confirm-copy')!;
+const confirmAction = document.querySelector<HTMLButtonElement>('#confirm-action')!;
+
+const gestureGuide = document.createElement('div');
+gestureGuide.className = 'gesture-guide';
+gestureGuide.innerHTML = '<span class="gesture-axis axis-a"></span><span class="gesture-axis axis-b"></span><span class="gesture-dot"></span>';
+document.querySelector<HTMLElement>('#app')!.appendChild(gestureGuide);
+const guideAxes = [...gestureGuide.querySelectorAll<HTMLElement>('.gesture-axis')];
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x07091c, 0.035);
+
+const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const cubeRoot = new THREE.Group();
+scene.add(cubeRoot);
+
+const turnPivot = new THREE.Group();
+cubeRoot.add(turnPivot);
+
+scene.add(new THREE.HemisphereLight(0xa8b7ff, 0x160e32, 2.6));
+const keyLight = new THREE.DirectionalLight(0xffffff, 4.3);
+keyLight.position.set(4, 7, 6);
+keyLight.castShadow = true;
+scene.add(keyLight);
+
+const rimLight = new THREE.PointLight(0x7766ff, 24, 18);
+rimLight.position.set(-5, 2, -4);
+scene.add(rimLight);
+
+const glow = new THREE.Mesh(
+  new THREE.CircleGeometry(2.7, 64),
+  new THREE.MeshBasicMaterial({ color: 0x6954ff, transparent: true, opacity: 0.085, depthWrite: false })
+);
+glow.position.set(0, -2.15, 0);
+glow.rotation.x = -Math.PI / 2;
+scene.add(glow);
+
+const starGeometry = new THREE.BufferGeometry();
+const starCount = 1500;
+const starPositions = new Float32Array(starCount * 3);
+const starSeeds = new Float32Array(starCount);
+for (let i = 0; i < starCount; i++) {
+  const radius = THREE.MathUtils.randFloat(11, 38);
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(THREE.MathUtils.randFloatSpread(2));
+  starPositions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+  starPositions[i * 3 + 1] = radius * Math.cos(phi);
+  starPositions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
+  starSeeds[i] = Math.random();
+}
+starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+const stars = new THREE.Points(
+  starGeometry,
+  new THREE.PointsMaterial({
+    color: 0xdce4ff,
+    size: 0.09,
+    transparent: true,
+    opacity: 0.98,
+    sizeAttenuation: true,
+    depthWrite: false
+  })
+);
+scene.add(stars);
+
+const brightStarGeometry = new THREE.BufferGeometry();
+const brightStarCount = 120;
+const brightStarPositions = new Float32Array(brightStarCount * 3);
+for (let i = 0; i < brightStarCount; i++) {
+  const radius = THREE.MathUtils.randFloat(12, 32);
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(THREE.MathUtils.randFloatSpread(2));
+  brightStarPositions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+  brightStarPositions[i * 3 + 1] = radius * Math.cos(phi);
+  brightStarPositions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
+}
+brightStarGeometry.setAttribute('position', new THREE.BufferAttribute(brightStarPositions, 3));
+const brightStars = new THREE.Points(
+  brightStarGeometry,
+  new THREE.PointsMaterial({
+    color: 0xffffff,
+    size: 0.18,
+    transparent: true,
+    opacity: 0.96,
+    sizeAttenuation: true,
+    depthWrite: false
+  })
+);
+scene.add(brightStars);
+
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+
+const size = 2;
+const spacing = 1.08;
+const half = (size - 1) / 2;
+const cubelets: Cubelet[] = [];
+const moveHistory: CubeMove[] = [];
+let moveCount = 0;
+let turnGesture: TurnGesture | null = null;
+let orbitGesture: OrbitGesture | null = null;
+const activePointers = new Map<number, ActivePointer>();
+let viewMode = false;
+let animating = false;
+let statusTimeout = 0;
+let pendingDangerAction: 'scramble' | 'reset' | null = null;
+
+let cameraYaw = Math.PI / 4;
+let cameraPitch = 0.42;
+let cameraDistance = 7.3;
+const minCameraDistance = 5.4;
+const maxCameraDistance = 10.5;
+
+const bodyMaterial = new THREE.MeshStandardMaterial({
+  color: 0x111522,
+  roughness: 0.28,
+  metalness: 0.14
+});
+const edgeMaterial = new THREE.MeshStandardMaterial({
+  color: 0x252b3e,
+  roughness: 0.45,
+  metalness: 0.08
+});
+
+const stickerMaterials: Record<string, THREE.MeshStandardMaterial> = {
+  px: new THREE.MeshStandardMaterial({ color: 0xf25f5c, roughness: 0.24 }),
+  nx: new THREE.MeshStandardMaterial({ color: 0xff9f1c, roughness: 0.24 }),
+  py: new THREE.MeshStandardMaterial({ color: 0xffe66d, roughness: 0.24 }),
+  ny: new THREE.MeshStandardMaterial({ color: 0xf7f7ff, roughness: 0.24 }),
+  pz: new THREE.MeshStandardMaterial({ color: 0x43d17d, roughness: 0.24 }),
+  nz: new THREE.MeshStandardMaterial({ color: 0x5968ff, roughness: 0.24 })
+};
+
+const roundedBox = new THREE.BoxGeometry(0.98, 0.98, 0.98, 3, 3, 3);
+roundedBox.computeVertexNormals();
+const stickerGeometry = new THREE.BoxGeometry(0.76, 0.76, 0.055, 2, 2, 1);
+
+function createSticker(material: THREE.Material, normal: THREE.Vector3): THREE.Mesh {
+  const sticker = new THREE.Mesh(stickerGeometry, material);
+  sticker.position.copy(normal).multiplyScalar(0.515);
+  sticker.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+  sticker.castShadow = false;
+  sticker.receiveShadow = false;
+  sticker.userData.isSticker = true;
+  return sticker;
+}
+
+function makeCubelet(x: number, y: number, z: number): Cubelet {
+  const group = new THREE.Group();
+  const body = new THREE.Mesh(roundedBox, bodyMaterial);
+  body.castShadow = true;
+  body.receiveShadow = true;
+  body.userData.isBody = true;
+  group.add(body);
+
+  const bevelShell = new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(0.985, 0.985, 0.985)),
+    new THREE.LineBasicMaterial({ color: edgeMaterial.color, transparent: true, opacity: 0.5 })
+  );
+  group.add(bevelShell);
+
+  if (x === size - 1) group.add(createSticker(stickerMaterials.px, new THREE.Vector3(1, 0, 0)));
+  if (x === 0) group.add(createSticker(stickerMaterials.nx, new THREE.Vector3(-1, 0, 0)));
+  if (y === size - 1) group.add(createSticker(stickerMaterials.py, new THREE.Vector3(0, 1, 0)));
+  if (y === 0) group.add(createSticker(stickerMaterials.ny, new THREE.Vector3(0, -1, 0)));
+  if (z === size - 1) group.add(createSticker(stickerMaterials.pz, new THREE.Vector3(0, 0, 1)));
+  if (z === 0) group.add(createSticker(stickerMaterials.nz, new THREE.Vector3(0, 0, -1)));
+
+  const cubelet: Cubelet = {
+    id: `${x}-${y}-${z}`,
+    home: { x, y, z },
+    coord: { x, y, z },
+    group
+  };
+
+  group.userData.cubelet = cubelet;
+  group.traverse((child) => { child.userData.cubelet = cubelet; });
+  setCubeletTransform(cubelet);
+  cubeRoot.add(group);
+  return cubelet;
+}
+
+function setCubeletTransform(cubelet: Cubelet) {
+  cubelet.group.position.set(
+    (cubelet.coord.x - half) * spacing,
+    (cubelet.coord.y - half) * spacing,
+    (cubelet.coord.z - half) * spacing
+  );
+}
+
+for (let x = 0; x < size; x++) {
+  for (let y = 0; y < size; y++) {
+    for (let z = 0; z < size; z++) cubelets.push(makeCubelet(x, y, z));
+  }
+}
+
+const shadowPlane = new THREE.Mesh(
+  new THREE.CircleGeometry(2.25, 64),
+  new THREE.ShadowMaterial({ color: 0x000000, opacity: 0.22 })
+);
+shadowPlane.rotation.x = -Math.PI / 2;
+shadowPlane.position.y = -2.12;
+shadowPlane.receiveShadow = true;
+scene.add(shadowPlane);
+
+function updateCamera() {
+  camera.position.set(
+    Math.sin(cameraYaw) * Math.cos(cameraPitch) * cameraDistance,
+    Math.sin(cameraPitch) * cameraDistance,
+    Math.cos(cameraYaw) * Math.cos(cameraPitch) * cameraDistance
+  );
+  camera.lookAt(0, 0, 0);
+}
+
+function setPointerFromEvent(event: PointerEvent) {
+  const rect = canvas.getBoundingClientRect();
+  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+}
+
+function firstCubeHit(event: PointerEvent): THREE.Intersection | null {
+  setPointerFromEvent(event);
+  const hits = raycaster.intersectObjects(cubelets.map(c => c.group), true);
+  return hits.find(hit => hit.object.userData.cubelet) ?? null;
+}
+
+function worldNormalForHit(hit: THREE.Intersection): THREE.Vector3 {
+  const normal = hit.face?.normal.clone() ?? new THREE.Vector3(0, 0, 1);
+  return normal.transformDirection(hit.object.matrixWorld).round();
+}
+
+function axisVector(axis: Axis): THREE.Vector3 {
+  if (axis === 'x') return new THREE.Vector3(1, 0, 0);
+  if (axis === 'y') return new THREE.Vector3(0, 1, 0);
+  return new THREE.Vector3(0, 0, 1);
+}
+
+function coordForAxis(coord: Vec3Int, axis: Axis): number {
+  return coord[axis];
+}
+
+function projectWorldPoint(point: THREE.Vector3): THREE.Vector2 {
+  const projected = point.clone().project(camera);
+  return new THREE.Vector2(
+    (projected.x * 0.5 + 0.5) * canvas.clientWidth,
+    (-projected.y * 0.5 + 0.5) * canvas.clientHeight
+  );
+}
+
+function getTurnCandidates(normal: THREE.Vector3, anchorPointWorld: THREE.Vector3, cubelet: Cubelet): TurnCandidate[] {
+  const anchorLocal = cubeRoot.worldToLocal(anchorPointWorld.clone());
+  const startScreen = projectWorldPoint(anchorPointWorld);
+  const candidates: TurnCandidate[] = [];
+
+  for (const axis of ['x', 'y', 'z'] as Axis[]) {
+    const axisVec = axisVector(axis);
+    if (Math.abs(axisVec.dot(normal)) > 0.5) continue;
+
+    const movedLocal = anchorLocal.clone().applyAxisAngle(axisVec, 0.18);
+    const movedWorld = cubeRoot.localToWorld(movedLocal);
+    const movedScreen = projectWorldPoint(movedWorld);
+    const direction = movedScreen.sub(startScreen);
+    const length = direction.length();
+    if (length < 0.5) continue;
+
+    direction.divideScalar(length);
+    candidates.push({
+      axis,
+      layer: coordForAxis(cubelet.coord, axis),
+      unitX: direction.x,
+      unitY: direction.y
+    });
+  }
+
+  return candidates;
+}
+
+function chooseTurn(candidates: TurnCandidate[], dx: number, dy: number): TurnCandidate | null {
+  const length = Math.hypot(dx, dy);
+  if (length < 0.001) return null;
+  const swipeX = dx / length;
+  const swipeY = dy / length;
+
+  let best: TurnCandidate | null = null;
+  let bestAlignment = -Infinity;
+  for (const candidate of candidates) {
+    const alignment = Math.abs(swipeX * candidate.unitX + swipeY * candidate.unitY);
+    if (alignment > bestAlignment) {
+      bestAlignment = alignment;
+      best = candidate;
+    }
+  }
+  return best;
+}
+
+function showGestureGuide(clientX: number, clientY: number, candidates: TurnCandidate[]) {
+  gestureGuide.style.left = `${clientX}px`;
+  gestureGuide.style.top = `${clientY}px`;
+  gestureGuide.classList.add('visible');
+  guideAxes.forEach((axisEl, index) => {
+    const candidate = candidates[index];
+    axisEl.hidden = !candidate;
+    if (!candidate) return;
+    const angle = Math.atan2(candidate.unitY, candidate.unitX) * 180 / Math.PI;
+    axisEl.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+    axisEl.classList.remove('active');
+  });
+}
+
+function lockGestureGuide(candidate: TurnCandidate) {
+  guideAxes.forEach((axisEl, index) => {
+    const item = turnGesture?.candidates[index];
+    axisEl.classList.toggle('active', Boolean(item && item.axis === candidate.axis));
+  });
+}
+
+function hideGestureGuide() {
+  gestureGuide.classList.remove('visible');
+  guideAxes.forEach(axisEl => axisEl.classList.remove('active'));
+}
+
+function detachSelected(selected: Cubelet[]) {
+  turnPivot.rotation.set(0, 0, 0);
+  turnPivot.position.set(0, 0, 0);
+  selected.forEach(c => turnPivot.attach(c.group));
+}
+
+function returnSelected(selected: Cubelet[]) {
+  turnPivot.updateMatrixWorld(true);
+  selected.forEach(c => cubeRoot.attach(c.group));
+  turnPivot.rotation.set(0, 0, 0);
+}
+
+function setPivotAngle(axis: Axis, angle: number) {
+  turnPivot.rotation.set(0, 0, 0);
+  turnPivot.rotation[axis] = angle;
+}
+
+function rotateCoord(coord: Vec3Int, axis: Axis, quarterTurns: -1 | 1): Vec3Int {
+  const centered = new THREE.Vector3(coord.x - half, coord.y - half, coord.z - half);
+  centered.applyAxisAngle(axisVector(axis), quarterTurns * Math.PI / 2);
+  return {
+    x: Math.round(centered.x + half),
+    y: Math.round(centered.y + half),
+    z: Math.round(centered.z + half)
+  };
+}
+
+function snapQuaternion(q: THREE.Quaternion) {
+  const e = new THREE.Euler().setFromQuaternion(q, 'XYZ');
+  e.x = Math.round(e.x / (Math.PI / 2)) * (Math.PI / 2);
+  e.y = Math.round(e.y / (Math.PI / 2)) * (Math.PI / 2);
+  e.z = Math.round(e.z / (Math.PI / 2)) * (Math.PI / 2);
+  q.setFromEuler(e).normalize();
+}
+
+function commitSelected(selected: Cubelet[], move: CubeMove) {
+  selected.forEach(cubelet => {
+    cubelet.coord = rotateCoord(cubelet.coord, move.axis, move.quarterTurns);
+    snapQuaternion(cubelet.group.quaternion);
+    setCubeletTransform(cubelet);
+  });
+}
+
+function animatePivot(
+  selected: Cubelet[],
+  axis: Axis,
+  from: number,
+  to: number,
+  duration: number,
+  onDone: () => void
+) {
+  animating = true;
+  const start = performance.now();
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const actualDuration = reduced ? 1 : duration;
+
+  const frame = (now: number) => {
+    const t = Math.min(1, (now - start) / actualDuration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    setPivotAngle(axis, THREE.MathUtils.lerp(from, to, eased));
+    if (t < 1) requestAnimationFrame(frame);
+    else {
+      onDone();
+      animating = false;
+      updateButtons();
+    }
+  };
+  requestAnimationFrame(frame);
+}
+
+function completePreview(gesture: TurnGesture, commit: boolean, record = true) {
+  if (!gesture.axis || !gesture.selected.length) return;
+  const target = commit ? gesture.sign * Math.PI / 2 : 0;
+  animatePivot(gesture.selected, gesture.axis, gesture.angle, target, commit ? 180 : 150, () => {
+    if (commit) {
+      const move: CubeMove = {
+        axis: gesture.axis!,
+        layer: gesture.layer,
+        quarterTurns: gesture.sign
+      };
+      returnSelected(gesture.selected);
+      commitSelected(gesture.selected, move);
+      if (record) {
+        moveHistory.push(move);
+        moveCount++;
+        moveCountEl.textContent = String(moveCount);
+        hintCard.classList.add('hidden');
+      }
+      if (isSolved()) showStatus('Cube solved! ✦');
+    } else {
+      returnSelected(gesture.selected);
+      gesture.selected.forEach(setCubeletTransform);
+    }
+  });
+}
+
+function performMove(move: CubeMove, record = true, duration = 160): Promise<void> {
+  return new Promise(resolve => {
+    const selected = cubelets.filter(c => coordForAxis(c.coord, move.axis) === move.layer);
+    detachSelected(selected);
+    animatePivot(selected, move.axis, 0, move.quarterTurns * Math.PI / 2, duration, () => {
+      returnSelected(selected);
+      commitSelected(selected, move);
+      if (record) {
+        moveHistory.push(move);
+        moveCount++;
+        moveCountEl.textContent = String(moveCount);
+      }
+      resolve();
+    });
+  });
+}
+
+function isSolved(): boolean {
+  const faceKeys = [
+    { normal: new THREE.Vector3(1,0,0), coord: 'x' as Axis, value: size - 1 },
+    { normal: new THREE.Vector3(-1,0,0), coord: 'x' as Axis, value: 0 },
+    { normal: new THREE.Vector3(0,1,0), coord: 'y' as Axis, value: size - 1 },
+    { normal: new THREE.Vector3(0,-1,0), coord: 'y' as Axis, value: 0 },
+    { normal: new THREE.Vector3(0,0,1), coord: 'z' as Axis, value: size - 1 },
+    { normal: new THREE.Vector3(0,0,-1), coord: 'z' as Axis, value: 0 }
+  ];
+
+  return faceKeys.every(face => {
+    const candidates = cubelets.filter(c => coordForAxis(c.coord, face.coord) === face.value);
+    const outwardHomeFaces = candidates.map(c => {
+      const inv = c.group.quaternion.clone().invert();
+      return face.normal.clone().applyQuaternion(inv).round();
+    });
+    const first = outwardHomeFaces[0];
+    return outwardHomeFaces.every(n => n.equals(first));
+  });
+}
+
+function showStatus(message: string) {
+  statusPill.textContent = message;
+  statusPill.classList.add('show');
+  window.clearTimeout(statusTimeout);
+  statusTimeout = window.setTimeout(() => statusPill.classList.remove('show'), 1500);
+}
+
+function updateButtons() {
+  undoBtn.disabled = animating || moveHistory.length === 0;
+  scrambleBtn.disabled = animating;
+  resetBtn.disabled = animating;
+  viewBtn.disabled = animating;
+}
+
+function getPointerCenter(): { x: number; y: number } {
+  const values = [...activePointers.values()];
+  const total = values.reduce((acc, point) => ({ x: acc.x + point.x, y: acc.y + point.y }), { x: 0, y: 0 });
+  return { x: total.x / values.length, y: total.y / values.length };
+}
+
+function getPointerDistance(): number | null {
+  const values = [...activePointers.values()];
+  if (values.length < 2) return null;
+  return Math.hypot(values[0].x - values[1].x, values[0].y - values[1].y);
+}
+
+function beginOrbitFromPointers() {
+  const center = getPointerCenter();
+  orbitGesture = {
+    lastCenterX: center.x,
+    lastCenterY: center.y,
+    lastDistance: getPointerDistance()
+  };
+}
+
+function cancelTurnPreviewForOrbit() {
+  if (!turnGesture) return;
+  hideGestureGuide();
+  const gesture = turnGesture;
+  turnGesture = null;
+  if (gesture.locked && gesture.axis) completePreview(gesture, false, false);
+}
+
+canvas.addEventListener('pointerdown', event => {
+  if (animating) return;
+  canvas.setPointerCapture(event.pointerId);
+  const hit = firstCubeHit(event);
+  activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY, startedOnCube: Boolean(hit) });
+
+  // Two or more fingers always orbit + pinch-zoom, wherever they landed.
+  if (activePointers.size >= 2) {
+    cancelTurnPreviewForOrbit();
+    beginOrbitFromPointers();
+    return;
+  }
+
+  // Single pointer: orbit when the View lock is on or the gesture starts off
+  // the cube (empty space). Otherwise grab the cubelet and twist its layer.
+  if (viewMode || !hit) {
+    beginOrbitFromPointers();
+    return;
+  }
+
+  const cubelet = hit.object.userData.cubelet as Cubelet;
+  const anchorPointWorld = hit.point.clone();
+  const hitNormalWorld = worldNormalForHit(hit);
+  const candidates = getTurnCandidates(hitNormalWorld, anchorPointWorld, cubelet);
+  if (candidates.length < 2) {
+    // Grazing hit — couldn't resolve two turn directions. Fall back to orbit
+    // so a gesture on the cube never feels dead.
+    beginOrbitFromPointers();
+    return;
+  }
+  showGestureGuide(event.clientX, event.clientY, candidates);
+  turnGesture = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    lastX: event.clientX,
+    lastY: event.clientY,
+    lastTime: event.timeStamp,
+    velocity: 0,
+    hitNormalWorld,
+    hitCubelet: cubelet,
+    anchorPointWorld,
+    candidates,
+    locked: false,
+    axis: null,
+    layer: 0,
+    sign: 1,
+    angle: 0,
+    selected: [],
+    dragUnitX: 0,
+    dragUnitY: 0
+  };
+});
+
+canvas.addEventListener('pointermove', event => {
+  if (!activePointers.has(event.pointerId)) return;
+  const previousPointer = activePointers.get(event.pointerId)!;
+  activePointers.set(event.pointerId, { ...previousPointer, x: event.clientX, y: event.clientY });
+
+  if (orbitGesture) {
+    const center = getPointerCenter();
+    const dx = center.x - orbitGesture.lastCenterX;
+    const dy = center.y - orbitGesture.lastCenterY;
+    cameraYaw -= dx * 0.008;
+    cameraPitch = THREE.MathUtils.clamp(cameraPitch + dy * 0.006, -0.85, 0.95);
+
+    const distance = getPointerDistance();
+    if (distance !== null && orbitGesture.lastDistance !== null) {
+      const pinchDelta = distance - orbitGesture.lastDistance;
+      cameraDistance = THREE.MathUtils.clamp(cameraDistance - pinchDelta * 0.018, minCameraDistance, maxCameraDistance);
+    }
+
+    orbitGesture.lastCenterX = center.x;
+    orbitGesture.lastCenterY = center.y;
+    orbitGesture.lastDistance = distance;
+    updateCamera();
+    return;
+  }
+
+  if (turnGesture?.pointerId === event.pointerId) {
+    const totalDx = event.clientX - turnGesture.startX;
+    const totalDy = event.clientY - turnGesture.startY;
+    const distance = Math.hypot(totalDx, totalDy);
+    const dt = Math.max(1, event.timeStamp - turnGesture.lastTime);
+    turnGesture.velocity = Math.hypot(event.clientX - turnGesture.lastX, event.clientY - turnGesture.lastY) / dt;
+    turnGesture.lastX = event.clientX;
+    turnGesture.lastY = event.clientY;
+    turnGesture.lastTime = event.timeStamp;
+
+    if (!turnGesture.locked && distance > 5) {
+      const choice = chooseTurn(turnGesture.candidates, totalDx, totalDy);
+      if (choice) {
+        turnGesture.axis = choice.axis;
+        turnGesture.layer = choice.layer;
+        turnGesture.dragUnitX = choice.unitX;
+        turnGesture.dragUnitY = choice.unitY;
+        const signedProjection = totalDx * choice.unitX + totalDy * choice.unitY;
+        turnGesture.sign = signedProjection >= 0 ? 1 : -1;
+        turnGesture.selected = cubelets.filter(c => coordForAxis(c.coord, choice.axis) === choice.layer);
+        detachSelected(turnGesture.selected);
+        turnGesture.locked = true;
+        lockGestureGuide(choice);
+      }
+    }
+
+    if (turnGesture.locked && turnGesture.axis) {
+      const signedDrag = totalDx * turnGesture.dragUnitX + totalDy * turnGesture.dragUnitY;
+      const angle = THREE.MathUtils.clamp(signedDrag * 0.0125, -1.82, 1.82);
+      turnGesture.angle = angle;
+      turnGesture.sign = angle >= 0 ? 1 : -1;
+      setPivotAngle(turnGesture.axis, angle);
+    }
+  }
+});
+
+function endPointer(event: PointerEvent) {
+  activePointers.delete(event.pointerId);
+  hideGestureGuide();
+
+  if (turnGesture?.pointerId === event.pointerId) {
+    const gesture = turnGesture;
+    turnGesture = null;
+    if (gesture.locked && gesture.axis) {
+      const commit = Math.abs(gesture.angle) >= THREE.MathUtils.degToRad(42) || gesture.velocity > 0.65;
+      completePreview(gesture, commit);
+    }
+  }
+
+  if (activePointers.size === 0) orbitGesture = null;
+  else beginOrbitFromPointers();
+}
+
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+
+undoBtn.addEventListener('click', async () => {
+  if (animating) return;
+  const last = moveHistory.pop();
+  if (!last) return;
+  await performMove({ ...last, quarterTurns: (last.quarterTurns * -1) as -1 | 1 }, false);
+  moveCount = Math.max(0, moveCount - 1);
+  moveCountEl.textContent = String(moveCount);
+  showStatus('Move undone');
+  updateButtons();
+});
+
+async function scrambleCube() {
+  if (animating) return;
+  showStatus('Scrambling…');
+  const moves: CubeMove[] = [];
+  let previousAxis: Axis | null = null;
+  for (let i = 0; i < 10; i++) {
+    const axes: Axis[] = ['x', 'y', 'z'];
+    let axis = axes[Math.floor(Math.random() * axes.length)];
+    while (axis === previousAxis) axis = axes[Math.floor(Math.random() * axes.length)];
+    previousAxis = axis;
+    moves.push({
+      axis,
+      layer: Math.random() > 0.5 ? 0 : size - 1,
+      quarterTurns: Math.random() > 0.5 ? 1 : -1
+    });
+  }
+  for (const move of moves) await performMove(move, false, 80);
+  moveHistory.length = 0;
+  moveCount = 0;
+  moveCountEl.textContent = '0';
+  showStatus('Your turn!');
+  updateButtons();
+}
+
+function resetCube() {
+  if (animating) return;
+  cubelets.forEach(c => {
+    c.coord = { ...c.home };
+    c.group.quaternion.identity();
+    setCubeletTransform(c);
+  });
+  moveHistory.length = 0;
+  moveCount = 0;
+  moveCountEl.textContent = '0';
+  showStatus('Cube reset');
+  updateButtons();
+}
+
+function closeGameMenu() {
+  gameMenu.hidden = true;
+  menuBtn.setAttribute('aria-expanded', 'false');
+}
+
+function requestDangerAction(action: 'scramble' | 'reset') {
+  pendingDangerAction = action;
+  closeGameMenu();
+  const isScramble = action === 'scramble';
+  confirmTitle.textContent = isScramble ? 'Scramble this cube?' : 'Reset this cube?';
+  confirmCopy.textContent = isScramble
+    ? 'Your current progress will be replaced with a new random puzzle.'
+    : 'Your current progress will be cleared and the cube returned to solved.';
+  confirmAction.textContent = isScramble ? 'Scramble' : 'Reset';
+  confirmDialog.showModal();
+}
+
+menuBtn.addEventListener('click', () => {
+  const willOpen = gameMenu.hidden;
+  gameMenu.hidden = !willOpen;
+  menuBtn.setAttribute('aria-expanded', String(willOpen));
+});
+
+scrambleBtn.addEventListener('click', () => requestDangerAction('scramble'));
+resetBtn.addEventListener('click', () => requestDangerAction('reset'));
+
+confirmDialog.addEventListener('close', async () => {
+  const action = pendingDangerAction;
+  pendingDangerAction = null;
+  if (confirmDialog.returnValue !== 'confirm' || !action) return;
+  if (action === 'scramble') await scrambleCube();
+  else resetCube();
+});
+
+document.addEventListener('pointerdown', event => {
+  if (gameMenu.hidden) return;
+  const target = event.target as Node;
+  if (!gameMenu.contains(target) && !menuBtn.contains(target)) closeGameMenu();
+});
+
+viewBtn.addEventListener('click', () => {
+  viewMode = !viewMode;
+  viewBtn.classList.toggle('active', viewMode);
+  viewBtn.setAttribute('aria-pressed', String(viewMode));
+  const label = viewBtn.querySelector('span');
+  if (label) label.textContent = viewMode ? 'Done' : 'View';
+  showStatus(viewMode ? 'Look lock — drag anywhere to orbit' : 'Twist mode — drag off the cube to orbit');
+});
+
+function resize() {
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
+  renderer.setSize(width, height, false);
+  camera.aspect = width / Math.max(height, 1);
+  camera.fov = width < 520 ? 42 : 36;
+  camera.updateProjectionMatrix();
+}
+
+window.addEventListener('resize', resize);
+updateCamera();
+resize();
+updateButtons();
+
+const clock = new THREE.Clock();
+function render() {
+  const elapsed = clock.getElapsedTime();
+  stars.rotation.y = elapsed * 0.006;
+  stars.rotation.x = Math.sin(elapsed * 0.08) * 0.025;
+  brightStars.rotation.y = -elapsed * 0.003;
+  brightStars.rotation.z = Math.sin(elapsed * 0.06) * 0.02;
+  glow.material.opacity = 0.075 + Math.sin(elapsed * 1.2) * 0.012;
+  if (!turnGesture && !animating) cubeRoot.position.y = Math.sin(elapsed * 0.85) * 0.055;
+  renderer.render(scene, camera);
+  requestAnimationFrame(render);
+}
+render();

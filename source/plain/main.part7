@@ -1,6 +1,6 @@
 n');
   if (label) label.textContent = viewMode ? 'Done' : 'View';
-  showStatus(viewMode ? 'View mode: drag on the cube' : 'Twist mode');
+  showStatus(viewMode ? 'Look lock — drag anywhere to orbit' : 'Twist mode — drag off the cube to orbit');
 });
 
 function resize() {

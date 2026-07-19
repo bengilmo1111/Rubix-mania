@@ -39,7 +39,7 @@ function cancelTurnPreviewForOrbit() {
 }
 
 canvas.addEventListener('pointerdown', event => {
-  if (animating) return;
+  if (animating || levelSelectOpen) return;
   canvas.setPointerCapture(event.pointerId);
   const hit = firstCubeHit(event);
   activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY, startedOnCube: Boolean(hit) });

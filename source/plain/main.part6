@@ -56,14 +56,15 @@ async function scrambleCube() {
   showStatus('Scrambling…');
   const moves: CubeMove[] = [];
   let previousAxis: Axis | null = null;
-  for (let i = 0; i < 10; i++) {
+  const turns = size === 2 ? 12 : size === 3 ? 25 : 40;
+  for (let i = 0; i < turns; i++) {
     const axes: Axis[] = ['x', 'y', 'z'];
     let axis = axes[Math.floor(Math.random() * axes.length)];
     while (axis === previousAxis) axis = axes[Math.floor(Math.random() * axes.length)];
     previousAxis = axis;
     moves.push({
       axis,
-      layer: Math.random() > 0.5 ? 0 : size - 1,
+      layer: Math.floor(Math.random() * size),
       quarterTurns: Math.random() > 0.5 ? 1 : -1
     });
   }
@@ -127,6 +128,34 @@ document.addEventListener('pointerdown', event => {
   if (gameMenu.hidden) return;
   const target = event.target as Node;
   if (!gameMenu.contains(target) && !menuBtn.contains(target)) closeGameMenu();
+});
+
+function openLevelSelect() {
+  levelSelectOpen = true;
+  closeGameMenu();
+  levelButtons.forEach(b => b.classList.toggle('active', Number(b.dataset.size) === size));
+  levelSelect.classList.add('open');
+}
+
+function selectLevel(nextSize: number) {
+  const rebuild = nextSize !== size || cubelets.length === 0;
+  levelSelectOpen = false;
+  levelSelect.classList.remove('open');
+  if (rebuild) {
+    buildCube(nextSize);
+    hintCard.classList.remove('hidden');
+    showStatus(`${nextSize}×${nextSize} · fresh cube`);
+  }
+}
+
+levelBtn.addEventListener('click', openLevelSelect);
+levelButtons.forEach(btn => btn.addEventListener('click', () => selectLevel(Number(btn.dataset.size))));
+levelSelect.addEventListener('pointerdown', event => {
+  // Tapping the dimmed backdrop cancels — but only once a cube already exists.
+  if (event.target === levelSelect && cubelets.length > 0) {
+    levelSelectOpen = false;
+    levelSelect.classList.remove('open');
+  }
 });
 
 viewBtn.addEventListener('click', () => {

@@ -16,6 +16,7 @@ window.addEventListener('resize', resize);
 updateCamera();
 resize();
 updateButtons();
+openLevelSelect();
 
 const clock = new THREE.Clock();
 function render() {

@@ -34,6 +34,7 @@
       </nav>
 
       <section class="game-menu" id="game-menu" hidden aria-label="More game actions">
+        <button id="level-btn" type="button">▦ <span><strong>Change level</strong><small>Pick a 2×2, 3×3 or 4×4 cube</small></span></button>
         <button id="scramble-btn" type="button">✦ <span><strong>Scramble cube</strong><small>Start a new random puzzle</small></span></button>
         <button id="reset-btn" class="danger" type="button">↺ <span><strong>Reset cube</strong><small>Return to the solved state</small></span></button>
       </section>
@@ -51,6 +52,28 @@
       </dialog>
 
       <div class="status-pill" id="status-pill" role="status">Ready</div>
+
+      <section class="level-select" id="level-select" aria-label="Choose a cube">
+        <div class="level-panel">
+          <p class="eyebrow">Casper presents</p>
+          <h2>Choose your cube</h2>
+          <div class="level-grid">
+            <button class="level-option" data-size="2" type="button">
+              <span class="level-cube lc2" aria-hidden="true"></span>
+              <span class="level-text"><strong>2 × 2</strong><small>Pocket · quick &amp; gentle</small></span>
+            </button>
+            <button class="level-option" data-size="3" type="button">
+              <span class="level-cube lc3" aria-hidden="true"></span>
+              <span class="level-text"><strong>3 × 3</strong><small>Classic · the original</small></span>
+            </button>
+            <button class="level-option" data-size="4" type="button">
+              <span class="level-cube lc4" aria-hidden="true"></span>
+              <span class="level-text"><strong>4 × 4</strong><small>Master · for the bold</small></span>
+            </button>
+          </div>
+          <p class="level-hint">Swipe a cubelet to twist · drag space to look</p>
+        </div>
+      </section>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>

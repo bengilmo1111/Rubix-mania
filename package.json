@@ -4,12 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "restore-source": "node scripts/restore-source.mjs",
-    "predev": "npm run restore-source",
     "dev": "vite",
-    "prebuild": "npm run restore-source",
-    "build": "tsc && vite build",
-    "pretypecheck": "npm run restore-source",
+    "build": "vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },

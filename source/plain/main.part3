@@ -32,7 +32,7 @@ function setPointerFromEvent(event: PointerEvent) {
 function firstCubeHit(event: PointerEvent): THREE.Intersection | null {
   setPointerFromEvent(event);
   const hits = raycaster.intersectObjects(cubelets.map(c => c.group), true);
-  return hits.find(hit => hit.object.userData.cubelet) ?? null;
+  return hits.find(hit => (hit.object as THREE.Mesh).isMesh && hit.object.userData.cubelet) ?? null;
 }
 
 function worldNormalForHit(hit: THREE.Intersection): THREE.Vector3 {
@@ -104,30 +104,25 @@ function chooseTurn(candidates: TurnCandidate[], dx: number, dy: number): TurnCa
   return best;
 }
 
-function showGestureGuide(clientX: number, clientY: number, candidates: TurnCandidate[]) {
-  gestureGuide.style.left = `${clientX}px`;
-  gestureGuide.style.top = `${clientY}px`;
-  gestureGuide.classList.add('visible');
-  guideAxes.forEach((axisEl, index) => {
-    const candidate = candidates[index];
-    axisEl.hidden = !candidate;
-    if (!candidate) return;
-    const angle = Math.atan2(candidate.unitY, candidate.unitX) * 180 / Math.PI;
-    axisEl.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
-    axisEl.classList.remove('active');
-  });
+function setHighlight(cubelet: Cubelet, on: boolean, opacity: number) {
+  cubelet.highlight.visible = on;
+  if (on) (cubelet.highlight.material as THREE.MeshBasicMaterial).opacity = opacity;
 }
 
-function lockGestureGuide(candidate: TurnCandidate) {
-  guideAxes.forEach((axisEl, index) => {
-    const item = turnGesture?.candidates[index];
-    axisEl.classList.toggle('active', Boolean(item && item.axis === candidate.axis));
-  });
+function clearHighlights() {
+  cubelets.forEach(c => { c.highlight.visible = false; });
 }
 
-function hideGestureGuide() {
-  gestureGuide.classList.remove('visible');
-  guideAxes.forEach(axisEl => axisEl.classList.remove('active'));
+// Gentle glow on the single grabbed piece before a direction is chosen.
+function highlightCubelet(cubelet: Cubelet) {
+  clearHighlights();
+  setHighlight(cubelet, true, 0.38);
+}
+
+// Bright glow on the whole row / column / face that will turn, so it is clear
+// which of the two possible moves the current swipe direction commits to.
+function highlightLayer(axis: Axis, layer: number) {
+  cubelets.forEach(c => setHighlight(c, coordForAxis(c.coord, axis) === layer, 0.6));
 }
 
 function detachSelected(selected: Cubelet[]) {

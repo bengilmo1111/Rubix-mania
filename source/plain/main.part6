@@ -6,7 +6,7 @@ yer = choice.layer;
         turnGesture.selected = cubelets.filter(c => coordForAxis(c.coord, choice.axis) === choice.layer);
         detachSelected(turnGesture.selected);
         turnGesture.locked = true;
-        lockGestureGuide(choice);
+        highlightLayer(choice.axis, choice.layer);
       }
     }
 
@@ -22,7 +22,7 @@ yer = choice.layer;
 
 function endPointer(event: PointerEvent) {
   activePointers.delete(event.pointerId);
-  hideGestureGuide();
+  clearHighlights();
 
   if (turnGesture?.pointerId === event.pointerId) {
     const gesture = turnGesture;
